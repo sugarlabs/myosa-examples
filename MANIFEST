@@ -1,4 +1,6 @@
+toolbar.py
 setup.py
 ReadEtextsActivity.py
+ReadEtextsActivity2.py
 activity/read-etexts.svg
 activity/activity.info
