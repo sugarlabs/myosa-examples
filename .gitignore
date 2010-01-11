@@ -3,4 +3,5 @@
 *.zip
 .eric4project/
 .ropeproject/
+dist
 

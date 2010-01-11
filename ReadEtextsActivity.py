@@ -143,7 +143,7 @@ class ReadEtextsActivity(activity.Activity):
         outfn = self.make_new_filename(filename)
         if (outfn == ''):
             return False
-        f = open(os.path.join(self.get_activity_root(), 'instance',  outfn),  'w')
+        f = open(os.path.join(self.get_activity_root(), 'tmp',  outfn),  'w')
         try:
             f.write(filebytes)
         finally:
@@ -157,7 +157,7 @@ class ReadEtextsActivity(activity.Activity):
             self.zf = zipfile.ZipFile(filename, 'r')
             self.book_files = self.zf.namelist()
             self.save_extracted_file(self.zf, self.book_files[0])
-            currentFileName = os.path.join(self.get_activity_root(), 'instance',  self.book_files[0])
+            currentFileName = os.path.join(self.get_activity_root(), 'tmp',  self.book_files[0])
         else:
             currentFileName = filename
             
