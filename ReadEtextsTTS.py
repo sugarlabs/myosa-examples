@@ -42,61 +42,62 @@ class ReadEtextsActivity():
         gtk.gdk.threads_init()
         self.paused = False
 
-def _message_cb(bus, message, pipe):
-    if message.type in (gst.MESSAGE_EOS, gst.MESSAGE_ERROR):
-        pipe.set_state(gst.STATE_NULL)
-        if pipe is play_speaker[1]:
-            speech.reset_cb()
-    elif message.type == gst.MESSAGE_ELEMENT and \
-            message.structure.get_name() == 'espeak-mark':
-        mark = message.structure['mark']
-        speech.highlight_cb(int(mark))
+    def _message_cb(bus, message, pipe):
+        if message.type in (gst.MESSAGE_EOS, gst.MESSAGE_ERROR):
+            pipe.set_state(gst.STATE_NULL)
+            if pipe is play_speaker[1]:
+                speech.reset_cb()
+        elif message.type == gst.MESSAGE_ELEMENT and \
+                message.structure.get_name() == 'espeak-mark':
+            mark = message.structure['mark']
+            speech.highlight_cb(int(mark))
 
-def _create_pipe():
-    pipe = gst.Pipeline('pipeline')
+    def _create_pipe():
+        pipe = gst.Pipeline('pipeline')
 
-    source = gst.element_factory_make('espeak', 'source')
-    pipe.add(source)
+        source = gst.element_factory_make('espeak', 'source')
+        pipe.add(source)
 
-    sink = gst.element_factory_make('autoaudiosink', 'sink')
-    pipe.add(sink)
-    source.link(sink)
+        sink = gst.element_factory_make('autoaudiosink', 'sink')
+        pipe.add(sink)
+        source.link(sink)
 
-    bus = pipe.get_bus()
-    bus.add_signal_watch()
-    bus.connect('message', _message_cb, pipe)	
+        bus = pipe.get_bus()
+        bus.add_signal_watch()
+        bus.connect('message', _message_cb, pipe)	
 
-    return (source, pipe)
+        return (source, pipe)
 
-def _speech(speaker, words):
-    speaker[0].props.pitch = speech.pitch
-    speaker[0].props.rate = speech.rate
-    speaker[0].props.voice = speech.voice[1]
-    speaker[0].props.text = words;
-    speaker[1].set_state(gst.STATE_NULL)
-    speaker[1].set_state(gst.STATE_PLAYING)
+    def _speech(speaker, words):
+        speaker[0].props.pitch = speech.pitch
+        speaker[0].props.rate = speech.rate
+        speaker[0].props.voice = speech.voice[1]
+        speaker[0].props.text = words;
+        speaker[1].set_state(gst.STATE_NULL)
+        speaker[1].set_state(gst.STATE_PLAYING)
 
-info_speaker = _create_pipe()
-play_speaker = _create_pipe()
-play_speaker[0].props.track = 2
+    info_speaker = _create_pipe()
+    play_speaker = _create_pipe()
+    play_speaker[0].props.track = 2
 
-def voices():
-    return info_speaker[0].props.voices
+    def voices():
+        return info_speaker[0].props.voices
 
-def say(words):
-    _speech(info_speaker, words)
+    def say(words):
+        _speech(info_speaker, words)
 
-def play(words):
-    _speech(play_speaker, words)
+    def play(words):
+        _speech(play_speaker, words)
 
-def is_stopped():
-    for i in play_speaker[1].get_state():
-        if isinstance(i, gst.State) and i == gst.STATE_NULL:
-            return True
-    return False
+    def is_stopped():
+        for i in play_speaker[1].get_state():
+            if isinstance(i, gst.State) and i == gst.STATE_NULL:
+                return True
+        return False
 
-def stop():
-    play_speaker[1].set_state(gst.STATE_NULL)
+    def stop():
+        play_speaker[1].set_state(gst.STATE_NULL)
+    
     def highlight_next_word(self, word_count):
         if word_count < len(self.word_tuples):
             word_tuple = self.word_tuples[word_count]
@@ -122,19 +123,9 @@ def stop():
         global done
         global speech_supported
         keyname = gtk.gdk.keyval_name(event.keyval)
-        if keyname == 'KP_End' and speech_supported:
-            if (done):
-                self.et = EspeakThread()
-                self.et.set_words_on_page(self.words_on_page)
-                self.et.set_activity(self)
-                self.et.start()
-            else:
-                if self.paused == True:
-                    self.paused = False
-                    self.et.resume()
-                else:
-                    self.paused = True
-                    self.et.pause()
+        if keyname == 'KP_End' and speech.supported:
+            play = self.speech_toolbar.play_btn
+            play.set_active(int(not play.get_active()))
             return True
         if keyname == 'plus':
             self.font_increase()
@@ -142,7 +133,8 @@ def stop():
         if keyname == 'minus':
             self.font_decrease()
             return True
-        if done == False:
+        if speech.supported and speech.is_stopped() == False:
+            # If speech is in progress, ignore other keys.
             return True
         if keyname == 'KP_Right':
             self.page_next()
@@ -238,7 +230,7 @@ def stop():
         word_end = 0
         current_word = 0
         self.word_tuples = []
-        omitted = [' ', '_', u'\r', '\n', '.', ',', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '~', '<', '>', ':', ';', '+', '=', '{', '}', '[', ']', '/', '?', '"' ]
+        omitted = [' ', '_', '@', '#', '$', '%', '^', '&', '*', '(', ')', '~', '<', '>',  '+', '=', '{', '}', '[', ']', '/' ]
         omitted_chars = set(omitted)
         while i < len(label_text):
             if label_text[i] not in omitted_chars:
