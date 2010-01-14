@@ -17,19 +17,23 @@
 import gst
 import logging
 
-import speech
-
 _logger = logging.getLogger('read-etexts-activity')
+
+voice = 'default'
+pitch = 0
+rate = -20
+
+highlight_cb = None
 
 def _message_cb(bus, message, pipe):
     if message.type in (gst.MESSAGE_EOS, gst.MESSAGE_ERROR):
         pipe.set_state(gst.STATE_NULL)
-        if pipe is play_speaker[1]:
-            speech.reset_cb()
+        # if pipe is play_speaker[1]:
+        #   reset_cb()
     elif message.type == gst.MESSAGE_ELEMENT and \
             message.structure.get_name() == 'espeak-mark':
         mark = message.structure['mark']
-        speech.highlight_cb(int(mark))
+        highlight_cb(int(mark))
 
 def _create_pipe():
     pipe = gst.Pipeline('pipeline')
@@ -48,9 +52,9 @@ def _create_pipe():
     return (source, pipe)
 
 def _speech(speaker, words):
-    speaker[0].props.pitch = speech.pitch
-    speaker[0].props.rate = speech.rate
-    speaker[0].props.voice = speech.voice[1]
+    speaker[0].props.pitch = pitch
+    speaker[0].props.rate = rate
+    speaker[0].props.voice = voice[1]
     speaker[0].props.text = words;
     speaker[1].set_state(gst.STATE_NULL)
     speaker[1].set_state(gst.STATE_PLAYING)
