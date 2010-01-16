@@ -181,7 +181,7 @@ class ReadEtextsActivity():
         word_end = 0
         current_word = 0
         self.word_tuples = []
-        omitted = [' ', '_', '@', '#', '$', '%', '^', '&', '*', '(', ')', '~', '<', '>',  '+', '=', '{', '}', '[', ']', '/' ]
+        omitted = [' ',  '\n',  u'\r',  '_',  '[', '{', ']', '}', '|',  '<',  '>',  '*',  '+',  '/',  '\\' ]
         omitted_chars = set(omitted)
         while i < len(label_text):
             if label_text[i] not in omitted_chars:

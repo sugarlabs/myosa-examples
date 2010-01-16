@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -15,35 +17,19 @@
 import re
 import subprocess
 
-import logging
-logger = logging.getLogger('speak')
-
-import espeak
-
 PITCH_MAX = 99
 RATE_MAX = 99
 PITCH_DEFAULT = PITCH_MAX/2
 RATE_DEFAULT = RATE_MAX/3
 
-class AudioGrabCmd(espeak.BaseAudioGrab):
-    def speak(self, status, text):
-        self.make_pipeline('filesrc name=file-source')
+def speak(text,  rate=RATE_DEFAULT,  pitch=PITCH_DEFAULT,  voice="default"):
 
-        # espeak uses 80 to 370
-        rate = 80 + (370-80) * int(status.rate) / 100
-        wavpath = "/tmp/speak.wav"
+    # espeak uses 80 to 370
+    rate = 80 + (370-80) * int(rate) / 100
 
-        subprocess.call(["espeak", "-w", wavpath, "-p", str(status.pitch),
-                "-s", str(rate), "-v", status.voice.name, text],
-                stdout=subprocess.PIPE)
-
-        self.stop_sound_device()
-
-        # set the source file
-        self.pipeline.get_by_name("file-source").props.location = wavpath
-
-        # play
-        self.restart_sound_device()
+    subprocess.call(["espeak", "-p", str(pitch),
+            "-s", str(rate), "-v", voice,  text],
+            stdout=subprocess.PIPE)
 
 def voices():
     out = []
@@ -62,3 +48,11 @@ def voices():
         out.append((language, name))
 
     return out
+    
+def main():
+    print voices()
+    speak("I'm afraid I can't do that, Dave.")
+    speak("Your mother was a hamster, and your father smelled of elderberries!",  30,  60,  "fr")
+
+if __name__ == "__main__":
+    main()
