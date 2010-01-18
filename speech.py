@@ -15,9 +15,6 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gst
-import logging
-
-_logger = logging.getLogger('read-etexts-activity')
 
 voice = 'default'
 pitch = 0
@@ -28,8 +25,6 @@ highlight_cb = None
 def _message_cb(bus, message, pipe):
     if message.type in (gst.MESSAGE_EOS, gst.MESSAGE_ERROR):
         pipe.set_state(gst.STATE_NULL)
-        # if pipe is play_speaker[1]:
-        #   reset_cb()
     elif message.type == gst.MESSAGE_ELEMENT and \
             message.structure.get_name() == 'espeak-mark':
         mark = message.structure['mark']
@@ -56,7 +51,6 @@ def _speech(speaker, words):
     speaker[0].props.rate = rate
     speaker[0].props.voice = voice[1]
     speaker[0].props.text = words;
-    speaker[1].set_state(gst.STATE_NULL)
     speaker[1].set_state(gst.STATE_PLAYING)
 
 info_speaker = _create_pipe()
@@ -68,6 +62,7 @@ def voices():
 
 def say(words):
     _speech(info_speaker, words)
+    print words
 
 def play(words):
     _speech(play_speaker, words)
@@ -80,3 +75,36 @@ def is_stopped():
 
 def stop():
     play_speaker[1].set_state(gst.STATE_NULL)
+
+def is_paused():
+    for i in play_speaker[1].get_state():
+        if isinstance(i, gst.State) and i == gst.STATE_PAUSED:
+            return True
+    return False
+
+def pause():
+    play_speaker[1].set_state(gst.STATE_PAUSED)
+
+def rate_up():
+    global rate
+    rate = rate + 10
+    if rate > 99:
+        rate = 99
+
+def rate_down():
+    global rate
+    rate = rate - 10
+    if rate < -99:
+        rate = -99
+
+def pitch_up():
+    global pitch
+    pitch = pitch + 10
+    if pitch > 99:
+        pitch = 99
+
+def pitch_down(): 
+    global pitch
+    pitch = pitch - 10
+    if pitch < -99:
+        pitch = -99

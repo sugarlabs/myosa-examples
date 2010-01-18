@@ -25,7 +25,6 @@ import getopt
 import pango
 import gobject
 import time
-import threading
 import speech
 
 speech_supported = True
@@ -44,8 +43,8 @@ PAGE_SIZE = 45
 class ReadEtextsActivity():
     def __init__(self):
         "The entry point to the Activity"
-        gtk.gdk.threads_init()
         speech.highlight_cb = self.highlight_next_word
+        print speech.voices()
     
     def highlight_next_word(self, word_count):
         if word_count < len(self.word_tuples):
@@ -73,10 +72,10 @@ class ReadEtextsActivity():
         global speech_supported
         keyname = gtk.gdk.keyval_name(event.keyval)
         if keyname == 'KP_End' and speech_supported:
-            if speech.is_stopped():
+            if speech.is_paused() or speech.is_stopped():
                 speech.play(self.add_word_marks())
             else:
-                speech.stop()
+                speech.pause()
             return True
         if keyname == 'plus':
             self.font_increase()
@@ -84,8 +83,24 @@ class ReadEtextsActivity():
         if keyname == 'minus':
             self.font_decrease()
             return True
-        if speech_supported and speech.is_stopped() == False:
+        if speech_supported and speech.is_stopped() == False and speech.is_paused == False:
             # If speech is in progress, ignore other keys.
+            return True
+        if keyname == '7':
+            speech.pitch_down()
+            speech.say('Pitch Adjusted')
+            return True
+        if keyname == '8':
+            speech.pitch_up()
+            speech.say('Pitch Adjusted')
+            return True
+        if keyname == '9':
+            speech.rate_down()
+            speech.say('Rate Adjusted')
+            return True
+        if keyname == '0':
+            speech.rate_up()
+            speech.say('Rate Adjusted')
             return True
         if keyname == 'KP_Right':
             self.page_next()
