@@ -108,3 +108,36 @@ def pitch_down():
     pitch = pitch - 10
     if pitch < -99:
         pitch = -99
+
+def prepare_highlighting(label_text):
+    i = 0
+    j = 0
+    word_begin = 0
+    word_end = 0
+    current_word = 0
+    word_tuples = []
+    omitted = [' ',  '\n',  u'\r',  '_',  '[', '{', ']', '}', '|',  '<',  '>',  '*',  '+',  '/',  '\\' ]
+    omitted_chars = set(omitted)
+    while i < len(label_text):
+        if label_text[i] not in omitted_chars:
+            word_begin = i
+            j = i
+            while  j < len(label_text) and label_text[j] not in omitted_chars:
+                j = j + 1
+                word_end = j
+                i = j
+            word_t = (word_begin, word_end, label_text[word_begin: word_end].strip())
+            if word_t[2] != u'\r':
+                word_tuples.append(word_t)
+        i = i + 1
+    return word_tuples
+
+def add_word_marks(word_tuples):
+    "Adds a mark between each word of text."
+    i = 0
+    marked_up_text  = '<speak> '
+    while i < len(word_tuples):
+        word_t = word_tuples[i]
+        marked_up_text = marked_up_text + '<mark name="' + str(i) + '"/>' + word_t[2]
+        i = i + 1
+    return marked_up_text + '</speak>'

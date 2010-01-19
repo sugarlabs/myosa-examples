@@ -44,7 +44,7 @@ class ReadEtextsActivity():
     def __init__(self):
         "The entry point to the Activity"
         speech.highlight_cb = self.highlight_next_word
-        print speech.voices()
+        # print speech.voices()
     
     def highlight_next_word(self, word_count):
         if word_count < len(self.word_tuples):
@@ -73,7 +73,7 @@ class ReadEtextsActivity():
         keyname = gtk.gdk.keyval_name(event.keyval)
         if keyname == 'KP_End' and speech_supported:
             if speech.is_paused() or speech.is_stopped():
-                speech.play(self.add_word_marks())
+                speech.play(self.words_on_page)
             else:
                 speech.pause()
             return True
@@ -187,41 +187,9 @@ class ReadEtextsActivity():
             linecount = linecount + 1
         textbuffer.set_text(label_text)
         self.textview.set_buffer(textbuffer)
-        self.prepare_highlighting(label_text)
-
-    def prepare_highlighting(self, label_text):
-        i = 0
-        j = 0
-        word_begin = 0
-        word_end = 0
-        current_word = 0
-        self.word_tuples = []
-        omitted = [' ',  '\n',  u'\r',  '_',  '[', '{', ']', '}', '|',  '<',  '>',  '*',  '+',  '/',  '\\' ]
-        omitted_chars = set(omitted)
-        while i < len(label_text):
-            if label_text[i] not in omitted_chars:
-                word_begin = i
-                j = i
-                while  j < len(label_text) and label_text[j] not in omitted_chars:
-                    j = j + 1
-                    word_end = j
-                    i = j
-                word_tuple = (word_begin, word_end, label_text[word_begin: word_end].strip())
-                if word_tuple[2] != u'\r':
-                    self.word_tuples.append(word_tuple)
-            i = i + 1
-        self.words_on_page = self.add_word_marks()
-        # print self.words_on_page
-
-    def add_word_marks(self):
-        "Adds a mark between each word of text."
-        i = 0
-        marked_up_text  = '<speak> '
-        while i < len(self.word_tuples):
-            word_tuple = self.word_tuples[i]
-            marked_up_text = marked_up_text + '<mark name="' + str(i) + '"/>' + word_tuple[2]
-            i = i + 1
-        return marked_up_text + '</speak>'
+        self.word_tuples = speech.prepare_highlighting(label_text)
+        self.words_on_page = speech.add_word_marks(self.word_tuples)
+        print self.words_on_page
 
     def save_extracted_file(self, zipfile, filename):
         "Extract the file to a temp directory for viewing"
@@ -264,6 +232,7 @@ class ReadEtextsActivity():
         return False
     
     def destroy_cb(self, widget, data=None):
+        speech.stop()
         gtk.main_quit()
 
     def main(self, file_path):
