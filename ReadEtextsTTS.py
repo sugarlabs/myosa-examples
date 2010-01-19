@@ -189,7 +189,6 @@ class ReadEtextsActivity():
         self.textview.set_buffer(textbuffer)
         self.word_tuples = speech.prepare_highlighting(label_text)
         self.words_on_page = speech.add_word_marks(self.word_tuples)
-        print self.words_on_page
 
     def save_extracted_file(self, zipfile, filename):
         "Extract the file to a temp directory for viewing"
