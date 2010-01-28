@@ -19,7 +19,6 @@ import hippo
 import gtk
 import pango
 import logging
-import re
 import cjson
 import time
 from datetime import datetime
@@ -42,10 +41,6 @@ from telepathy.constants import (
     CHANNEL_TEXT_MESSAGE_TYPE_NORMAL)
 
 logger = logging.getLogger('minichat-activity')
-
-URL_REGEXP = re.compile('((http|ftp)s?://)?'
-    '(([-a-zA-Z0-9]+[.])+[-a-zA-Z0-9]{2,}|([0-9]{1,3}[.]){3}[0-9]{1,3})'
-    '(:[1-9][0-9]{0,4})?(/[-a-zA-Z0-9/%~@&_+=;:,.?#]*[a-zA-Z0-9/])?')
 
 class MiniChat(Activity):
     def __init__(self, handle):
@@ -72,17 +67,12 @@ class MiniChat(Activity):
         self._chat_is_room = False
         self.text_channel = None
 
-        if self.shared_activity:
+        if self._shared_activity:
             # we are joining the activity
             self.connect('joined', self._joined_cb)
             if self.get_shared():
                 # we have already joined
                 self._joined_cb()
-        elif handle.uri:
-            # XMPP non-Sugar incoming chat, not sharable
-            activity_toolbar = toolbox.get_activity_toolbar()
-            activity_toolbar.share.props.visible = False 
-            self._one_to_one_connection(handle.uri)
         else:
             # we are creating the activity
             if not self.metadata or self.metadata.get('share-scope',
@@ -95,54 +85,24 @@ class MiniChat(Activity):
         logger.debug('Chat was shared')
         self._setup()
 
-    def _one_to_one_connection(self, tp_channel):
-        """Handle a private invite from a non-Sugar XMPP client."""
-        if self.shared_activity or self.text_channel:
-            return
-        bus_name, connection, channel = cjson.decode(tp_channel)
-        logger.debug('GOT XMPP: %s %s %s', bus_name, connection,
-                     channel)
-        conn = Connection(
-            bus_name, connection, ready_handler=lambda conn: \
-            self._one_to_one_connection_ready_cb(bus_name, channel, conn))
-
-    def _one_to_one_connection_ready_cb(self, bus_name, channel, conn):
-        """Callback for Connection for one to one connection"""
-        text_channel = Channel(bus_name, channel)
-        self.text_channel = TextChannelWrapper(text_channel, conn)
-        self.text_channel.set_received_callback(self._received_cb)
-        self.text_channel.handle_pending_messages()
-        self.text_channel.set_closed_callback(
-            self._one_to_one_connection_closed_cb)
-        self._chat_is_room = False
-        self._alert(_('On-line'), _('Private Chat'))
-
-        # XXX How do we detect the sender going offline?
-        self.entry.set_sensitive(True)
-        self.entry.grab_focus()
-
-    def _one_to_one_connection_closed_cb(self):
-        """Callback for when the text channel closes."""
-        self._alert(_('Off-line'), _('left the chat'))
-
     def _setup(self):
         self.text_channel = TextChannelWrapper(
-            self.shared_activity.telepathy_text_chan,
-            self.shared_activity.telepathy_conn)
+            self._shared_activity.telepathy_text_chan,
+            self._shared_activity.telepathy_conn)
         self.text_channel.set_received_callback(self._received_cb)
         self._alert(_('On-line'), _('Connected'))
-        self.shared_activity.connect('buddy-joined', self._buddy_joined_cb)
-        self.shared_activity.connect('buddy-left', self._buddy_left_cb)
+        self._shared_activity.connect('buddy-joined', self._buddy_joined_cb)
+        self._shared_activity.connect('buddy-left', self._buddy_left_cb)
         self._chat_is_room = True
         self.entry.set_sensitive(True)
         self.entry.grab_focus()
 
     def _joined_cb(self, activity):
         """Joined a shared activity."""
-        if not self.shared_activity:
+        if not self._shared_activity:
             return
         logger.debug('Joined a shared chat')
-        for buddy in self.shared_activity.get_joined_buddies():
+        for buddy in self._shared_activity.get_joined_buddies():
             self._buddy_already_exists(buddy)
         self._setup()
 
@@ -323,7 +283,6 @@ class MiniChat(Activity):
             color_fill = COLOR_WHITE.get_int()
             text_color = COLOR_BLACK.get_int()
             color = '#000000,#FFFFFF'
-        self._add_log(nick, color, text, status_message)
 
         # Check for Right-To-Left languages:
         if pango.find_base_dir(nick, -1) == pango.DIRECTION_RTL:
@@ -370,35 +329,6 @@ class MiniChat(Activity):
         if status_message:
             self._last_msg_sender = None
 
-        match = URL_REGEXP.search(text)
-        while match:
-            # there is a URL in the text
-            starttext = text[:match.start()]
-            if starttext:
-                message = hippo.CanvasText(
-                    text=starttext,
-                    size_mode=hippo.CANVAS_SIZE_WRAP_WORD,
-                    color=text_color,
-                    font_desc=FONT_NORMAL.get_pango_desc(),
-                    xalign=hippo.ALIGNMENT_START)
-                msg_hbox.append(message)
-            url = text[match.start():match.end()]
-            message = hippo.CanvasLink(
-                text=url,
-                color=text_color,
-                font_desc=FONT_BOLD.get_pango_desc(),
-                )
-            attrs = pango.AttrList()
-            attrs.insert(pango.AttrUnderline(pango.UNDERLINE_SINGLE, 0, 32767))
-            message.set_property("attributes", attrs)
-            message.connect('activated', self._link_activated_cb)
-
-            palette = URLMenu(url)
-            palette.props.invoker = CanvasInvoker(message)
-
-            msg_hbox.append(message)
-            text = text[match.end():]
-            match = URL_REGEXP.search(text)
         if text:
             message = hippo.CanvasText(
                 text=text,
@@ -437,7 +367,6 @@ class MiniChat(Activity):
         box.append(message)
         self.conversation.append(box)
         self._last_msg_sender = None
-        self._add_log_timestamp(timestamp)
 
     def entry_activate_cb(self, entry):
         text = entry.props.text
@@ -450,102 +379,6 @@ class MiniChat(Activity):
             else:
                 logger.debug('Tried to send message but text channel '
                     'not connected.')
-
-    def _add_log(self, nick, color, text, status_message):
-        """Add the text to the chat log.
-        
-        nick -- string, buddy nickname
-        color -- string, buddy.props.color
-        text -- string, body of message
-        status_message -- boolean
-        """
-        if not nick:
-            nick = '???'
-        if not color:
-            color = '#000000,#FFFFFF'
-        if not text:
-            text = '-'
-        if not status_message:
-            status_message = False
-        self._chat_log += '%s\t%s\t%s\t%d\t%s\n' % (
-            datetime.strftime(datetime.now(), '%b %d %H:%M:%S'),
-            nick, color, status_message, text)
-
-    def _add_log_timestamp(self, existing_timestamp=None):
-        """Add a timestamp entry to the chat log."""
-        if existing_timestamp is not None:
-            self._chat_log += '%s\t\t\n' % existing_timestamp
-        else:
-            self._chat_log += '%s\t\t\n' % (
-                datetime.strftime(datetime.now(), '%b %d %H:%M:%S'))
-
-    def _get_log(self):
-        return self._chat_log
-
-    def write_file(self, file_path):
-        """Store chat log in Journal.
-
-        Handling the Journal is provided by Activity - we only need
-        to define this method.
-        """
-        logger.debug('write_file: writing %s' % file_path)
-        self._add_log_timestamp()
-        f = open(file_path, 'w')
-        try:
-            f.write(self._get_log())
-        finally:
-            f.close()
-        self.metadata['mime_type'] = 'text/plain'
-
-    def read_file(self, file_path):
-        """Load a chat log from the Journal.
-
-        Handling the Journal is provided by Activity - we only need
-        to define this method.
-        """
-        logger.debug('read_file: reading %s' % file_path)
-        log = open(file_path).readlines()
-        last_line_was_timestamp = False
-        for line in log:
-            if line.endswith('\t\t\n'):
-                if last_line_was_timestamp is False:
-                    timestamp = line.strip().split('\t')[0]
-                    self.add_separator(timestamp)
-                    last_line_was_timestamp = True
-            else:
-                timestamp, nick, color, status, text = line.strip().split('\t')
-                status_message = bool(int(status))
-                self.add_text({'nick': nick, 'color': color},
-                              text, status_message)
-                last_line_was_timestamp = False
-
-    def _show_via_journal(self, url):
-        """Ask the journal to display a URL"""
-        import os
-        import time
-        from sugar import profile
-        from sugar.activity.activity import show_object_in_journal
-        from sugar.datastore import datastore
-        logger.debug('Create journal entry for URL: %s', url)
-        jobject = datastore.create()
-        metadata = {
-            'title': "%s: %s" % (_('URL from Chat'), url),
-            'title_set_by_user': '1',
-            'icon-color': profile.get_color().to_string(),
-            'mime_type': 'text/uri-list',
-            }
-        for k,v in metadata.items():
-            jobject.metadata[k] = v
-        file_path = os.path.join(self.get_activity_root(), 'instance',
-                                 '%i_' % time.time())
-        open(file_path, 'w').write(url + '\r\n')
-        os.chmod(file_path, 0755)
-        jobject.set_file_path(file_path)
-        datastore.write(jobject)
-        show_object_in_journal(jobject.object_id)
-        jobject.destroy()
-        os.unlink(file_path)
-
 
 class TextChannelWrapper(object):
     """Wrap a telepathy Text Channel to make usage simpler."""
@@ -666,60 +499,3 @@ class TextChannelWrapper(object):
 
         return pservice.get_buddy_by_telepathy_handle(
             tp_name, tp_path, handle)
-
-class URLMenu(Palette):
-    def __init__(self, url):
-        Palette.__init__(self, url)
-
-        self.url = url_check_protocol(url)
-
-        menu_item = MenuItem(_('Copy to Clipboard'), 'edit-copy')
-        menu_item.connect('activate', self._copy_to_clipboard_cb)
-        self.menu.append(menu_item)
-        menu_item.show()
-
-    def _copy_to_clipboard_cb(self, menuitem):
-        logger.debug('Copy %s to clipboard', self.url)
-        clipboard = gtk.clipboard_get()
-        targets = [("text/uri-list", 0, 0),
-                   ("UTF8_STRING", 0, 1)]
-
-        if not clipboard.set_with_data(targets,
-                                       self._clipboard_data_get_cb,
-                                       self._clipboard_clear_cb,
-                                       (self.url)):
-            logger.error('GtkClipboard.set_with_data failed!')
-        else:
-            self.owns_clipboard = True
-
-    def _clipboard_data_get_cb(self, clipboard, selection, info, data):
-        logger.debug('_clipboard_data_get_cb data=%s target=%s', data,
-                     selection.target)        
-        if selection.target in ['text/uri-list']:
-            if not selection.set_uris([data]):
-                logger.debug('failed to set_uris')
-        else:
-            logger.debug('not uri')
-            if not selection.set_text(data):
-                logger.debug('failed to set_text')
-
-    def _clipboard_clear_cb(self, clipboard, data):
-        logger.debug('clipboard_clear_cb')
-        self.owns_clipboard = False
-
-
-def url_check_protocol(url):
-    """Check that the url has a protocol, otherwise prepend https://
-    
-    url -- string
-    
-    Returns url -- string
-    """
-    protocols = ['http://', 'https://', 'ftp://', 'ftps://']
-    no_protocol = True
-    for protocol in protocols:
-        if url.startswith(protocol):
-            no_protocol = False
-    if no_protocol:
-        url = 'http://' + url
-    return url
