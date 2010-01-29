@@ -19,9 +19,6 @@ import hippo
 import gtk
 import pango
 import logging
-import cjson
-import time
-from datetime import datetime
 from sugar.activity.activity import Activity, ActivityToolbox, SCOPE_PRIVATE
 from sugar.graphics.alert import NotifyAlert
 from sugar.graphics.style import (Color, COLOR_BLACK, COLOR_WHITE, 
@@ -29,8 +26,6 @@ from sugar.graphics.style import (Color, COLOR_BLACK, COLOR_WHITE,
 from sugar.graphics.roundbox import CanvasRoundBox
 from sugar.graphics.xocolor import XoColor
 from sugar.graphics.palette import Palette, CanvasInvoker
-from sugar.graphics.menuitem import MenuItem
-from sugar.util import timestamp_to_elapsed_string
 
 from telepathy.client import Connection, Channel
 from telepathy.interfaces import (
@@ -56,15 +51,12 @@ class MiniChat(Activity):
         toolbox.show()
 
         self.owner = self._pservice.get_owner()
-        self._chat_log = ''
         # Auto vs manual scrolling:
         self._scroll_auto = True
         self._scroll_value = 0.0
         # Track last message, to combine several messages:
         self._last_msg = None
         self._last_msg_sender = None
-        # Chat is room or one to one:
-        self._chat_is_room = False
         self.text_channel = None
 
         if self._shared_activity:
@@ -93,7 +85,6 @@ class MiniChat(Activity):
         self._alert(_('On-line'), _('Connected'))
         self._shared_activity.connect('buddy-joined', self._buddy_joined_cb)
         self._shared_activity.connect('buddy-left', self._buddy_left_cb)
-        self._chat_is_room = True
         self.entry.set_sensitive(True)
         self.entry.grab_focus()
 
@@ -109,9 +100,6 @@ class MiniChat(Activity):
     def _received_cb(self, buddy, text):
         """Show message that was received."""
         if buddy:
-            if type(buddy) is dict:
-                nick = buddy['nick']
-            else:
                 nick = buddy.props.nick
         else:
             nick = '???'
@@ -162,17 +150,6 @@ class MiniChat(Activity):
         self.add_text(buddy, buddy.props.nick+' '+_('is here'),
             status_message=True)
 
-    def can_close(self):
-        """Perform cleanup before closing.
-        
-        Close text channel of a one to one XMPP chat.
-        
-        """
-        if self._chat_is_room is False:
-            if self.text_channel is not None:
-                self.text_channel.close()
-        return True
-
     def make_root(self):
         conversation = hippo.CanvasBox(
             spacing=0,
@@ -204,8 +181,8 @@ class MiniChat(Activity):
         canvas.set_root(sw)
 
         box = gtk.VBox(homogeneous=False)
-        box.pack_start(canvas)
         box.pack_start(hbox, expand=False)
+        box.pack_start(canvas)
 
         return box
 
@@ -226,16 +203,10 @@ class MiniChat(Activity):
         elif adj.get_value() == adj.upper-adj.page_size:
             self._scroll_auto = True
 
-    def _link_activated_cb(self, link):
-        url = url_check_protocol(link.props.text)
-        self._show_via_journal(url)
-
     def add_text(self, buddy, text, status_message=False):
         """Display text on screen, with name and colors.
 
-        buddy -- buddy object or dict {nick: string, color: string}
-                 (The dict is for loading the chat log from the journal,
-                 when we don't have the buddy object any more.)
+        buddy -- buddy object
         text -- string, what the buddy said
         status_message -- boolean
             False: show what buddy said
@@ -250,19 +221,14 @@ class MiniChat(Activity):
         | +---------+ | +------------+ | |
         |             |                | |
         |             | +--msg_hbox--+ | |
-        |             | | text | url | | |
+        |             | | text       | | |
         |             | +------------+ | |
         |             +----------------+ |
         `--------------------------------'
         """
         if buddy:
-            if type(buddy) is dict:
-                # dict required for loading chat log from journal
-                nick = buddy['nick']
-                color = buddy['color']
-            else:
-                nick = buddy.props.nick
-                color = buddy.props.color
+            nick = buddy.props.nick
+            color = buddy.props.color
             try:
                 color_stroke_html, color_fill_html = color.split(',')
             except ValueError:
@@ -349,25 +315,6 @@ class MiniChat(Activity):
             box.append(rb)
             self.conversation.append(box)
 
-    def add_separator(self, timestamp):
-        """Add whitespace and timestamp between chat sessions."""
-        box = hippo.CanvasBox(padding=2)
-        time_with_current_year = (time.localtime(time.time())[0],) +\
-                time.strptime(timestamp, "%b %d %H:%M:%S")[1:]
-        timestamp_seconds = time.mktime(time_with_current_year)
-        if timestamp_seconds > time.time():
-            time_with_previous_year = (time.localtime(time.time())[0]-1,) +\
-                    time.strptime(timestamp, "%b %d %H:%M:%S")[1:]
-            timestamp_seconds = time.mktime(time_with_previous_year)
-        message = hippo.CanvasText(
-            text=timestamp_to_elapsed_string(timestamp_seconds),
-            color=COLOR_BUTTON_GREY.get_int(),
-            font_desc=FONT_NORMAL.get_pango_desc(),
-            xalign=hippo.ALIGNMENT_CENTER)
-        box.append(message)
-        self.conversation.append(box)
-        self._last_msg_sender = None
-
     def entry_activate_cb(self, entry):
         text = entry.props.text
         logger.debug('Entry: %s' % text)
@@ -447,17 +394,7 @@ class TextChannelWrapper(object):
         Calls self._activity_cb which is a callback to the activity.
         """
         if self._activity_cb:
-            try:
-                self._text_chan[CHANNEL_INTERFACE_GROUP]
-            except:
-                # One to one XMPP chat
-                nick = self._conn[
-                    CONN_INTERFACE_ALIASING].RequestAliases([sender])[0]
-                buddy = {'nick': nick, 'color': '#000000,#808080'}
-            else:
-                # Normal sugar MUC chat
-                # XXX: cache these
-                buddy = self._get_buddy(sender)
+            buddy = self._get_buddy(sender)
             self._activity_cb(buddy, text)
             self._text_chan[
                 CHANNEL_TYPE_TEXT].AcknowledgePendingMessages([id])
