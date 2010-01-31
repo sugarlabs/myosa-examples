@@ -73,6 +73,15 @@ class MiniChat(Activity):
         logger.debug('Chat was shared')
         self._setup()
 
+    def _joined_cb(self, activity):
+        """Joined a shared activity."""
+        if not self._shared_activity:
+            return
+        logger.debug('Joined a shared chat')
+        for buddy in self._shared_activity.get_joined_buddies():
+            self._buddy_already_exists(buddy)
+        self._setup()
+
     def _setup(self):
         self.text_channel = TextChannelWrapper(
             self._shared_activity.telepathy_text_chan,
@@ -83,15 +92,6 @@ class MiniChat(Activity):
         self._shared_activity.connect('buddy-left', self._buddy_left_cb)
         self.entry.set_sensitive(True)
         self.entry.grab_focus()
-
-    def _joined_cb(self, activity):
-        """Joined a shared activity."""
-        if not self._shared_activity:
-            return
-        logger.debug('Joined a shared chat')
-        for buddy in self._shared_activity.get_joined_buddies():
-            self._buddy_already_exists(buddy)
-        self._setup()
 
     def _received_cb(self, buddy, text):
         """Show message that was received."""
