@@ -155,8 +155,6 @@ class ReadEtextsActivity(activity.Activity):
         self.tempfile = None
         self.close_requested = False
         self.connect("shared", self.shared_cb)
-        h = hash(self._activity_id)
-        self.port = 1024 + (h % 64511)
 
         self.is_received_document = False
         
@@ -363,6 +361,10 @@ class ReadEtextsActivity(activity.Activity):
         "Read the Etext file"
         global PAGE_SIZE,  page
         
+        tempfile = os.path.join(self.get_activity_root(),  'instance', 'tmp%i' % time.time())
+        os.link(filename,  tempfile)
+        self.tempfile = tempfile
+
         if zipfile.is_zipfile(filename):
             self.zf = zipfile.ZipFile(filename, 'r')
             self.book_files = self.zf.namelist()
@@ -415,55 +417,18 @@ class ReadEtextsActivity(activity.Activity):
                 f.write(filebytes)
             finally:
                 f.close
+        elif self.tempfile:
+            if self.close_requested:
+                os.link(self.tempfile,  filename)
+                logger.debug("Removing temp file %s because we will close", self.tempfile)
+                os.unlink(self.tempfile)
+                self.tempfile = None
+        else:
+            # skip saving empty file
+            raise NotImplementedError
 
         self.metadata['activity'] = self.get_bundle_id()
         self.save_page_number()
-
-    def download_result_cb(self, getter, tempfile, suggested_name, tube_id):
-        if self.download_content_type.startswith('text/html'):
-            # got an error page instead
-            self.download_error_cb(getter, 'HTTP Error', tube_id)
-            return
-
-        del self.unused_download_tubes
-
-        self.tempfile = tempfile
-        file_path = os.path.join(self.get_activity_root(), 'instance',
-                                    '%i' % time.time())
-        logger.debug("Saving file %s to datastore...", file_path)
-        os.link(tempfile, file_path)
-        self._jobject.file_path = file_path
-        datastore.write(self._jobject, transfer_ownership=True)
-
-        logger.debug("Got document %s (%s) from tube %u",
-                      tempfile, suggested_name, tube_id)
-        self.is_received_document = True
-        self.load_document(tempfile)
-        self.save()
-
-    def download_progress_cb(self, getter, bytes_downloaded, tube_id):
-        if self.download_content_length > 0:
-            logger.debug("Downloaded %u of %u bytes from tube %u...",
-                          bytes_downloaded, self.download_content_length, 
-                          tube_id)
-        else:
-            logger.debug("Downloaded %u bytes from tube %u...",
-                          bytes_downloaded, tube_id)
-        total = self.download_content_length
-        self.set_downloaded_bytes(bytes_downloaded,  total)
-        gtk.gdk.threads_enter()
-        while gtk.events_pending():
-            gtk.main_iteration()
-        gtk.gdk.threads_leave()
-
-    def download_error_cb(self, getter, err, tube_id):
-        logger.debug("Error getting document from tube %u: %s",
-                      tube_id, err)
-        self.alert(_('Failure'), _('Error getting document from tube'))
-        self.want_document = True
-        self.download_content_length = 0
-        self.download_content_type = None
-        gobject.idle_add(self.get_document)
 
     def download_document(self, tube_id, path):
         chan = self._shared_activity.telepathy_tubes_chan
@@ -491,6 +456,62 @@ class ReadEtextsActivity(activity.Activity):
         self.download_content_length = getter.get_content_length()
         self.download_content_type = getter.get_content_type()
         return False
+
+    def download_progress_cb(self, getter, bytes_downloaded, tube_id):
+        if self.download_content_length > 0:
+            logger.debug("Downloaded %u of %u bytes from tube %u...",
+                          bytes_downloaded, self.download_content_length, 
+                          tube_id)
+        else:
+            logger.debug("Downloaded %u bytes from tube %u...",
+                          bytes_downloaded, tube_id)
+        total = self.download_content_length
+        self.set_downloaded_bytes(bytes_downloaded,  total)
+        gtk.gdk.threads_enter()
+        while gtk.events_pending():
+            gtk.main_iteration()
+        gtk.gdk.threads_leave()
+
+    def set_downloaded_bytes(self, bytes,  total):
+        fraction = float(bytes) / float(total)
+        self.metadata['progress'] = str(fraction)
+        # self.progressbar.set_fraction(fraction)
+        logger.debug("Downloaded percent",  fraction)
+        
+    def clear_downloaded_bytes(self):
+        # self.progressbar.set_fraction(0.0)
+        logger.debug("Cleared download bytes")
+
+    def download_error_cb(self, getter, err, tube_id):
+        logger.debug("Error getting document from tube %u: %s",
+                      tube_id, err)
+        self.alert(_('Failure'), _('Error getting document from tube'))
+        self.want_document = True
+        self.download_content_length = 0
+        self.download_content_type = None
+        gobject.idle_add(self.get_document)
+
+    def download_result_cb(self, getter, tempfile, suggested_name, tube_id):
+        if self.download_content_type.startswith('text/html'):
+            # got an error page instead
+            self.download_error_cb(getter, 'HTTP Error', tube_id)
+            return
+
+        del self.unused_download_tubes
+
+        self.tempfile = tempfile
+        file_path = os.path.join(self.get_activity_root(), 'instance',
+                                    '%i' % time.time())
+        logger.debug("Saving file %s to datastore...", file_path)
+        os.link(tempfile, file_path)
+        self._jobject.file_path = file_path
+        datastore.write(self._jobject, transfer_ownership=True)
+
+        logger.debug("Got document %s (%s) from tube %u",
+                      tempfile, suggested_name, tube_id)
+        self.is_received_document = True
+        self.read_file(tempfile)
+        self.save()
 
     def get_document(self):
         if not self.want_document:
@@ -526,8 +547,10 @@ class ReadEtextsActivity(activity.Activity):
 
     def share_document(self):
         """Share the document."""
-        logger.debug('Starting HTTP server on port %d', self.port)
-        self.fileserver = ReadHTTPServer(("", self.port),
+        h = hash(self._activity_id)
+        port = 1024 + (h % 64511)
+        logger.debug('Starting HTTP server on port %d', port)
+        self.fileserver = ReadHTTPServer(("", port),
             self.tempfile)
 
         # Make a tube for it
@@ -536,7 +559,7 @@ class ReadEtextsActivity(activity.Activity):
         self.fileserver_tube_id = iface.OfferStreamTube(READ_STREAM_SERVICE,
                 {},
                 telepathy.SOCKET_ADDRESS_TYPE_IPV4,
-                ('127.0.0.1', dbus.UInt16(self.port)),
+                ('127.0.0.1', dbus.UInt16(port)),
                 telepathy.SOCKET_ACCESS_CONTROL_LOCALHOST, 0)
 
     def watch_for_tubes(self):
