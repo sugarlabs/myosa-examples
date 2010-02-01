@@ -132,10 +132,20 @@ class ReadEtextsActivity(activity.Activity):
         self.textview.set_left_margin(50)
         self.textview.connect("key_press_event", self.keypress_cb)
 
+        self.progressbar = gtk.ProgressBar()
+        self.progressbar.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
+        self.progressbar.set_fraction(0.0)
+        
         self.scrolled_window.add(self.textview)
-        self.set_canvas(self.scrolled_window)
         self.textview.show()
         self.scrolled_window.show()
+
+        vbox = gtk.VBox()
+        vbox.pack_start(self.progressbar,  False,  False,  10)
+        vbox.pack_start(self.scrolled_window)
+        self.set_canvas(vbox)
+        vbox.show()
+        
         page = 0
         self.clipboard = gtk.Clipboard(display=gtk.gdk.display_get_default(), \
                                        selection="CLIPBOARD")
@@ -446,6 +456,7 @@ class ReadEtextsActivity(activity.Activity):
         assert addr[1] > 0 and addr[1] < 65536
         port = int(addr[1])
 
+        self.progressbar.show()
         getter = ReadURLDownloader("http://%s:%d/document"
                                            % (addr[0], port))
         getter.connect("finished", self.download_result_cb, tube_id)
@@ -474,15 +485,15 @@ class ReadEtextsActivity(activity.Activity):
 
     def set_downloaded_bytes(self, bytes,  total):
         fraction = float(bytes) / float(total)
-        self.metadata['progress'] = str(fraction)
-        # self.progressbar.set_fraction(fraction)
+        self.progressbar.set_fraction(fraction)
         logger.debug("Downloaded percent",  fraction)
         
     def clear_downloaded_bytes(self):
-        # self.progressbar.set_fraction(0.0)
+        self.progressbar.set_fraction(0.0)
         logger.debug("Cleared download bytes")
 
     def download_error_cb(self, getter, err, tube_id):
+        self.progressbar.hide()
         logger.debug("Error getting document from tube %u: %s",
                       tube_id, err)
         self.alert(_('Failure'), _('Error getting document from tube'))
@@ -512,6 +523,7 @@ class ReadEtextsActivity(activity.Activity):
         self.is_received_document = True
         self.read_file(tempfile)
         self.save()
+        self.progressbar.hide()
 
     def get_document(self):
         if not self.want_document:
