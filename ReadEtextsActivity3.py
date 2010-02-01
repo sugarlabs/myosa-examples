@@ -440,6 +440,10 @@ class ReadEtextsActivity(activity.Activity):
         self.metadata['activity'] = self.get_bundle_id()
         self.save_page_number()
 
+    def can_close(self):
+        self.close_requested = True
+        return True
+
     def download_document(self, tube_id, path):
         chan = self._shared_activity.telepathy_tubes_chan
         iface = chan[telepathy.CHANNEL_TYPE_TUBES]
