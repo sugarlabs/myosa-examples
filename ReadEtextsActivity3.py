@@ -79,7 +79,7 @@ class ReadURLDownloader(network.GlibURLDownloader):
             return self._info.headers.get('Content-type')
         return None
 
-READ_STREAM_SERVICE = 'read-activity-http'
+READ_STREAM_SERVICE = 'read-etexts-activity-http'
 
 class ReadEtextsActivity(activity.Activity):
     def __init__(self, handle):
@@ -371,7 +371,8 @@ class ReadEtextsActivity(activity.Activity):
         "Read the Etext file"
         global PAGE_SIZE,  page
         
-        tempfile = os.path.join(self.get_activity_root(),  'instance', 'tmp%i' % time.time())
+        tempfile = os.path.join(self.get_activity_root(),  'instance', \
+                'tmp%i' % time.time())
         os.link(filename,  tempfile)
         self.tempfile = tempfile
 
@@ -430,7 +431,8 @@ class ReadEtextsActivity(activity.Activity):
         elif self.tempfile:
             if self.close_requested:
                 os.link(self.tempfile,  filename)
-                logger.debug("Removing temp file %s because we will close", self.tempfile)
+                logger.debug("Removing temp file %s because we will close", \
+                             self.tempfile)
                 os.unlink(self.tempfile)
                 self.tempfile = None
         else:
@@ -444,6 +446,38 @@ class ReadEtextsActivity(activity.Activity):
         self.close_requested = True
         return True
 
+    def joined_cb(self, also_self):
+        """Callback for when a shared activity is joined.
+
+        Get the shared document from another participant.
+        """
+        self.watch_for_tubes()
+        gobject.idle_add(self.get_document)
+
+    def get_document(self):
+        if not self.want_document:
+            return False
+
+        # Assign a file path to download if one doesn't exist yet
+        if not self._jobject.file_path:
+            path = os.path.join(self.get_activity_root(), 'instance',
+                                'tmp%i' % time.time())
+        else:
+            path = self._jobject.file_path
+
+        # Pick an arbitrary tube we can try to download the document from
+        try:
+            tube_id = self.unused_download_tubes.pop()
+        except (ValueError, KeyError), e:
+            logger.debug('No tubes to get the document from right now: %s',
+                          e)
+            return False
+
+        # Avoid trying to download the document multiple times at once
+        self.want_document = False
+        gobject.idle_add(self.download_document, tube_id, path)
+        return False
+
     def download_document(self, tube_id, path):
         chan = self._shared_activity.telepathy_tubes_chan
         iface = chan[telepathy.CHANNEL_TYPE_TUBES]
@@ -451,8 +485,8 @@ class ReadEtextsActivity(activity.Activity):
                 telepathy.SOCKET_ADDRESS_TYPE_IPV4,
                 telepathy.SOCKET_ACCESS_CONTROL_LOCALHOST, 0,
                 utf8_strings=True)
-        logger.debug('Accepted stream tube: listening address is %r', addr)
-        # SOCKET_ADDRESS_TYPE_IPV4 is defined to have addresses of type '(sq)'
+        logger.debug('Accepted stream tube: listening address is %r', \
+                     addr)
         assert isinstance(addr, dbus.Struct)
         assert len(addr) == 2
         assert isinstance(addr[0], str)
@@ -529,37 +563,17 @@ class ReadEtextsActivity(activity.Activity):
         self.save()
         self.progressbar.hide()
 
-    def get_document(self):
-        if not self.want_document:
-            return False
+    def shared_cb(self, activityid):
+        """Callback when activity shared.
 
-        # Assign a file path to download if one doesn't exist yet
-        if not self._jobject.file_path:
-            path = os.path.join(self.get_activity_root(), 'instance',
-                                'tmp%i' % time.time())
-        else:
-            path = self._jobject.file_path
+        Set up to share the document.
 
-        # Pick an arbitrary tube we can try to download the document from
-        try:
-            tube_id = self.unused_download_tubes.pop()
-        except (ValueError, KeyError), e:
-            logger.debug('No tubes to get the document from right now: %s',
-                          e)
-            return False
-
-        # Avoid trying to download the document multiple times at once
-        self.want_document = False
-        gobject.idle_add(self.download_document, tube_id, path)
-        return False
-
-    def joined_cb(self, also_self):
-        """Callback for when a shared activity is joined.
-
-        Get the shared document from another participant.
         """
+        # We initiated this activity and have now shared it, so by
+        # definition we have the file.
+        logger.debug('Activity became shared')
         self.watch_for_tubes()
-        gobject.idle_add(self.get_document)
+        self.share_document()
 
     def share_document(self):
         """Share the document."""
@@ -610,18 +624,6 @@ class ReadEtextsActivity(activity.Activity):
         """Handle ListTubes error by logging."""
         logger.error('ListTubes() failed: %s', e)
  
-    def shared_cb(self, activityid):
-        """Callback when activity shared.
-
-        Set up to share the document.
-
-        """
-        # We initiated this activity and have now shared it, so by
-        # definition we have the file.
-        logger.debug('Activity became shared')
-        self.watch_for_tubes()
-        self.share_document()
-
     def alert(self, title, text=None):
         alert = NotifyAlert(timeout=20)
         alert.props.title = title
