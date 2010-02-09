@@ -1,3 +1,4 @@
+# gst_simple_tts.py
 # Copyright (C) 2010 Aleksey Lim
 #
 # This program is free software; you can redistribute it and/or modify

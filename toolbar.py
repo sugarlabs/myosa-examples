@@ -1,3 +1,5 @@
+# toolbar.,py  The toolbars used by ReadEtextsActivity.
+#
 # Copyright (C) 2010, James Simmons.
 # Adapted from code Copyright (C) Red Hat Inc.
 #

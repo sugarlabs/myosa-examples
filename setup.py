@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# setup.py
+
 # Copyright (C) 2006, Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify

@@ -1,3 +1,5 @@
+# textchannel.py
+
 # Copyright 2007-2008 One Laptop Per Child
 #
 # This program is free software; you can redistribute it and/or modify
