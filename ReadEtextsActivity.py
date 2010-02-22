@@ -17,10 +17,8 @@
 # 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-import sys
 import os
 import zipfile
-import pygtk
 import gtk
 import pango
 from sugar.activity import activity
@@ -166,7 +164,7 @@ class ReadEtextsActivity(activity.Activity):
         try:
             f.write(filebytes)
         finally:
-            f.close
+            f.close()
 
     def read_file(self, filename):
         "Read the Etext file"
