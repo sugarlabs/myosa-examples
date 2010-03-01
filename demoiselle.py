@@ -20,8 +20,11 @@
 # 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-import pygame, math, sys
+import pygame
+import math
+import sys
 from pygame.locals import *
+import gtk
 
 class Demoiselle:
     def __init__(self):
@@ -29,6 +32,7 @@ class Demoiselle:
         self.screen = pygame.display.get_surface()
         self.screen.blit(self.background, (0,0))
         self.clock = pygame.time.Clock()
+        self.paused = False
 
         gliders = [
             GliderSprite((200, 200)),
@@ -42,9 +46,22 @@ class Demoiselle:
         rect = self.screen.get_rect()
         airplane = AirplaneSprite('demoiselle.png', rect.center)
         airplane_sprite = pygame.sprite.RenderPlain(airplane)
-        while 1:
+        self.running = True
+        
+        while self.running:
             deltat = self.clock.tick(30)
+            # Pump GTK messages.
+            while gtk.events_pending():
+                gtk.main_iteration()
+
+            # Pump PyGame messages.
             for event in pygame.event.get():
+                if event.type == pygame.QUIT: 
+                    self.running = False
+                    return
+                elif event.type == pygame.VIDEORESIZE:
+                    pygame.display.set_mode(event.size,  pygame.RESIZABLE)
+                
                 if not hasattr(event, 'key'): 
                     continue
                 down = event.type == KEYDOWN
@@ -56,8 +73,6 @@ class Demoiselle:
                     airplane.throttle_up = down * 2
                 elif event.key == K_MINUS or event.key == K_KP_MINUS: 
                     airplane.throttle_down = down * -2
-                elif event.key == K_ESCAPE: 
-                    sys.exit(0)
 
             self.glider_group.clear(self.screen, self.background)
             airplane_sprite.clear(self.screen, self.background)
@@ -132,6 +147,7 @@ def main():
     pygame.display.set_mode((0, 0), pygame.RESIZABLE)
     game = Demoiselle() 
     game.run()
+    sys.exit(0)
 
 if __name__ == '__main__':
     main()
