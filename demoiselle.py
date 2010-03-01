@@ -30,13 +30,13 @@ class Demoiselle:
         self.screen.blit(self.background, (0,0))
         self.clock = pygame.time.Clock()
 
-        pads = [
-            PadSprite((200, 200)),
-            PadSprite((800, 200)),
-            PadSprite((200, 600)),
-            PadSprite((800, 600)),
+        gliders = [
+            GliderSprite((200, 200)),
+            GliderSprite((800, 200)),
+            GliderSprite((200, 600)),
+            GliderSprite((800, 600)),
         ]
-        self. pad_group = pygame.sprite.RenderPlain(*pads)
+        self. glider_group = pygame.sprite.RenderPlain(*gliders)
         
     def run(self):
         rect = self.screen.get_rect()
@@ -59,11 +59,11 @@ class Demoiselle:
                 elif event.key == K_ESCAPE: 
                     sys.exit(0)
 
-            self.pad_group.clear(self.screen, self.background)
+            self.glider_group.clear(self.screen, self.background)
             airplane_sprite.clear(self.screen, self.background)
-            collisions = pygame.sprite.spritecollide(airplane, self.pad_group,  False)
-            self.pad_group.update(collisions)
-            self.pad_group.draw(self.screen)
+            collisions = pygame.sprite.spritecollide(airplane, self.glider_group,  False)
+            self.glider_group.update(collisions)
+            self.glider_group.draw(self.screen)
             airplane_sprite.update(deltat)
             airplane_sprite.draw(self.screen)
             pygame.display.flip()
@@ -111,14 +111,14 @@ class AirplaneSprite(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = self.position
 
-class PadSprite(pygame.sprite.Sprite):
+class GliderSprite(pygame.sprite.Sprite):
     def __init__(self, position):
         pygame.sprite.Sprite.__init__(self)
-        self.normal = pygame.image.load('pad_normal.png')
+        self.normal = pygame.image.load('glider_normal.png')
         self.rect = pygame.Rect(self.normal.get_rect())
         self.rect.center = position
         self.image = self.normal
-        self.hit = pygame.image.load('pad_hit.png')
+        self.hit = pygame.image.load('glider_hit.png')
     def update(self, hit_list):
         if self in hit_list: 
             self.image = self.hit
