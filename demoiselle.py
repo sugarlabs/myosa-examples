@@ -22,10 +22,52 @@
 
 import pygame, math, sys
 from pygame.locals import *
-screen = pygame.display.set_mode((1024, 768))
-background = pygame.image.load('sky.jpg')
-screen.blit(background, (0,0))
-clock = pygame.time.Clock()
+
+class Demoiselle:
+    def __init__(self):
+        self.background = pygame.image.load('sky.jpg')
+        self.screen = pygame.display.get_surface()
+        self.screen.blit(self.background, (0,0))
+        self.clock = pygame.time.Clock()
+
+        pads = [
+            PadSprite((200, 200)),
+            PadSprite((800, 200)),
+            PadSprite((200, 600)),
+            PadSprite((800, 600)),
+        ]
+        self. pad_group = pygame.sprite.RenderPlain(*pads)
+        
+    def run(self):
+        rect = self.screen.get_rect()
+        airplane = AirplaneSprite('demoiselle.png', rect.center)
+        airplane_sprite = pygame.sprite.RenderPlain(airplane)
+        while 1:
+            deltat = self.clock.tick(30)
+            for event in pygame.event.get():
+                if not hasattr(event, 'key'): 
+                    continue
+                down = event.type == KEYDOWN
+                if event.key == K_DOWN or event.key == K_KP2: 
+                    airplane.joystick_back = down * 5
+                elif event.key == K_UP or event.key == K_KP8: 
+                    airplane.joystick_forward = down * -5
+                elif event.key == K_EQUALS or event.key == K_KP_PLUS: 
+                    airplane.throttle_up = down * 2
+                elif event.key == K_MINUS or event.key == K_KP_MINUS: 
+                    airplane.throttle_down = down * -2
+                elif event.key == K_ESCAPE: 
+                    sys.exit(0)
+
+            self.pad_group.clear(self.screen, self.background)
+            airplane_sprite.clear(self.screen, self.background)
+            collisions = pygame.sprite.spritecollide(airplane, self.pad_group,  False)
+            self.pad_group.update(collisions)
+            self.pad_group.draw(self.screen)
+            airplane_sprite.update(deltat)
+            airplane_sprite.draw(self.screen)
+            pygame.display.flip()
+
 class AirplaneSprite(pygame.sprite.Sprite):
     MAX_FORWARD_SPEED = 10
     MIN_FORWARD_SPEED = 1
@@ -39,29 +81,30 @@ class AirplaneSprite(pygame.sprite.Sprite):
         self.rect.center = self.position
         self.speed = 1
         self.direction = 0
-        self.k_left = self.k_right = self.k_down = self.k_up = 0
+        self.joystick_back = self.joystick_forward = self.throttle_down = self.throttle_up = 0
+        
     def update(self, deltat):
-        # SIMULATION
-        self.speed += (self.k_up + self.k_down)
+        self.speed += (self.throttle_up + self.throttle_down)
         if self.speed > self.MAX_FORWARD_SPEED:
             self.speed = self.MAX_FORWARD_SPEED
         if self.speed < self.MIN_FORWARD_SPEED:
             self.speed = self.MIN_FORWARD_SPEED
-        self.direction += (self.k_right + self.k_left)
+        self.direction += (self.joystick_forward + self.joystick_back)
         x, y = self.position
         rad = self.direction * math.pi / 180
         x += -self.speed * math.cos(rad)
         y += -self.speed * math.sin(rad)
+        screen = pygame.display.get_surface()
         if y < 0:
-            y = 768
+            y = screen.get_height()
             
         if x < 0:
-            x = 1024
+            x = screen.get_width()
             
-        if x > 1024:
+        if x > screen.get_width():
             x = 0
             
-        if y > 768:
+        if y > screen.get_height():
             y = 0
         self.position = (x, y)
         self.image = pygame.transform.rotate(self.src_image, -self.direction)
@@ -82,40 +125,13 @@ class PadSprite(pygame.sprite.Sprite):
         else: 
             self.image = self.normal
 
-pads = [
-    PadSprite((200, 200)),
-    PadSprite((800, 200)),
-    PadSprite((200, 600)),
-    PadSprite((800, 600)),
-]
-pad_group = pygame.sprite.RenderPlain(*pads)
+# This function is called when the game is run directly from the command line:
+# ./demoiselle.py 
+def main():
+    pygame.init()
+    pygame.display.set_mode((0, 0), pygame.RESIZABLE)
+    game = Demoiselle() 
+    game.run()
 
-# CREATE AN AIRPLANE AND RUN
-rect = screen.get_rect()
-airplane = AirplaneSprite('demoiselle.png', rect.center)
-airplane_sprite = pygame.sprite.RenderPlain(airplane)
-while 1:
-    # USER INPUT
-    deltat = clock.tick(30)
-    for event in pygame.event.get():
-        if not hasattr(event, 'key'): continue
-        down = event.type == KEYDOWN
-        if event.key == K_RIGHT: 
-            airplane.k_right = down * -5
-        elif event.key == K_LEFT: 
-            airplane.k_left = down * 5
-        elif event.key == K_UP: 
-            airplane.k_up = down * 2
-        elif event.key == K_DOWN: 
-            airplane.k_down = down * -2
-        elif event.key == K_ESCAPE: 
-            sys.exit(0)
-    # RENDERING
-    pad_group.clear(screen, background)
-    airplane_sprite.clear(screen, background)
-    collisions = pygame.sprite.spritecollide(airplane, pad_group,  False)
-    pad_group.update(collisions)
-    pad_group.draw(screen)
-    airplane_sprite.update(deltat)
-    airplane_sprite.draw(screen)
-    pygame.display.flip()
+if __name__ == '__main__':
+    main()
