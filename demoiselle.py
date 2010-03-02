@@ -24,7 +24,6 @@ import pygame
 import math
 import sys
 from pygame.locals import *
-import gtk
 
 class Demoiselle:
     def __init__(self):
@@ -50,17 +49,14 @@ class Demoiselle:
         
         while self.running:
             deltat = self.clock.tick(30)
-            # Pump GTK messages.
-            while gtk.events_pending():
-                gtk.main_iteration()
 
-            # Pump PyGame messages.
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: 
                     self.running = False
                     return
                 elif event.type == pygame.VIDEORESIZE:
                     pygame.display.set_mode(event.size,  pygame.RESIZABLE)
+                    self.screen.blit(self.background, (0,0))
                 
                 if not hasattr(event, 'key'): 
                     continue
