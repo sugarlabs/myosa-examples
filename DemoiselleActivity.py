@@ -29,6 +29,9 @@ class DemoiselleActivity(activity.Activity):
         
     def build_toolbar(self):
         toolbox = activity.ActivityToolbox(self)
+        activity_toolbar = toolbox.get_activity_toolbar()
+        activity_toolbar.keep.props.visible = False
+        activity_toolbar.share.props.visible = False
         
         self.view_toolbar = ViewToolbar()
         toolbox.add_toolbar(_('View'), self.view_toolbar)
@@ -36,7 +39,7 @@ class DemoiselleActivity(activity.Activity):
                 self.view_toolbar_go_fullscreen_cb)
         self.view_toolbar.show()
 
-        toolbox.show_all()
+        toolbox.show()
         self.set_toolbox(toolbox)
 
     def view_toolbar_go_fullscreen_cb(self, view_toolbar):
