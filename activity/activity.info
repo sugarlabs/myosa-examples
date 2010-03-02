@@ -1,9 +1,8 @@
 [Activity]
-name = Read Etexts II
-service_name = net.flossmanuals.ReadEtextsActivity
+name = Demoiselle
+service_name = net.flossmanuals.Demoiselle
 icon = read-etexts
-exec = sugar-activity ReadEtextsActivity3.ReadEtextsActivity
-show_launcher = no
+exec = sugar-activity DemoiselleActivity.DemoiselleActivity
+show_launcher = yes
 activity_version = 1
-mime_types = text/plain;application/zip
 license = GPLv2+
