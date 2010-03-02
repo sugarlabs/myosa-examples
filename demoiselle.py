@@ -69,10 +69,12 @@ class Demoiselle:
                     event.key == pygame.K_KP8: 
                     airplane.joystick_forward = down * -5
                 elif event.key == pygame.K_EQUALS or \
-                    event.key == pygame.K_KP_PLUS: 
+                    event.key == pygame.K_KP_PLUS or \
+                    event.key == pygame.K_KP9:
                     airplane.throttle_up = down * 2
                 elif event.key == pygame.K_MINUS or \
-                    event.key == pygame.K_KP_MINUS: 
+                    event.key == pygame.K_KP_MINUS or \
+                    event.key == pygame.K_KP3: 
                     airplane.throttle_down = down * -2
 
             self.glider_group.clear(self.screen, self.background)
