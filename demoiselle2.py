@@ -36,10 +36,14 @@ class Demoiselle:
         self.clock = pygame.time.Clock()
         self.running = True
         self.background = pygame.image.load('sky.jpg')
+        self.score = 99
         
     def get_score(self):
-        return '99'
+        return self.score
     
+    def set_score(self,  score):
+        self.score = score
+
     def run(self):
         "This method processes PyGame messages"
 

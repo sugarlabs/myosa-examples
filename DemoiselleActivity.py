@@ -22,7 +22,6 @@ from gettext import gettext as _
 import gtk
 import pygame
 from sugar.activity import activity
-from sugar.graphics.alert import NotifyAlert
 from sugar.graphics.toolbutton import ToolButton
 import gobject
 import sugargame.canvas
@@ -42,6 +41,7 @@ class DemoiselleActivity(activity.Activity):
         self._pygamecanvas = sugargame.canvas.PygameCanvas(self)
         # Note that set_canvas implicitly calls read_file when resuming from the Journal.
         self.set_canvas(self._pygamecanvas)
+        self.score = ''
         
         # Start the game running.
         self._pygamecanvas.run_pygame(self.game.run)
@@ -67,29 +67,17 @@ class DemoiselleActivity(activity.Activity):
     def read_file(self, file_path):
         score_file = open(file_path, "r")
         while score_file:
-            line = score_file.readline()
-            alert(_('Previous Score'),  _('Your score last time was ') + line)
+            self.score = score_file.readline()
+            self.game.set_score(int(self.score))
         score_file.close()
         
     def write_file(self, file_path):
         score = self.game.get_score()
         f = open(file_path, 'wb')
         try:
-            f.write(score)
+            f.write(str(score))
         finally:
             f.close
-
-    def alert(self, title, text=None):
-        alert = NotifyAlert(timeout=20)
-        alert.props.title = title
-        alert.props.msg = text
-        self.add_alert(alert)
-        alert.connect('response', self.alert_cancel_cb)
-        alert.show()
-
-    def alert_cancel_cb(self, alert, response_id):
-        self.remove_alert(alert)
-        self.textview.grab_focus()
 
 class ViewToolbar(gtk.Toolbar):
     __gtype_name__ = 'ViewToolbar'
