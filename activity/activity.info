@@ -1,9 +1,8 @@
 [Activity]
-name = Read Etexts II
-service_name = net.flossmanuals.ReadEtextsActivity
-icon = read-etexts
-exec = sugar-activity ReadEtextsActivity3.ReadEtextsActivity
-show_launcher = no
+name = Mini Chat
+service_name = net.flossmanuals.MiniChat
+icon = chat
+exec = sugar-activity minichat.MiniChat
+show_launcher = yes
 activity_version = 1
-mime_types = text/plain;application/zip
 license = GPLv2+
