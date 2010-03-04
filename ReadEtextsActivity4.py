@@ -111,107 +111,9 @@ class ReadEtextsActivity(activity.Activity):
         self.object_id = handle.object_id
 
         if _NEW_TOOLBAR_SUPPORT:
-            toolbar_box = ToolbarBox()
-
-            activity_button = ActivityToolbarButton(self)
-            toolbar_box.toolbar.insert(activity_button, 0)
-            activity_button.show()
-
-            self.edit_toolbar = activity.EditToolbar()
-            self.edit_toolbar.undo.props.visible = False
-            self.edit_toolbar.redo.props.visible = False
-            self.edit_toolbar.separator.props.visible = False
-            self.edit_toolbar.copy.set_sensitive(False)
-            self.edit_toolbar.copy.connect('clicked', self.edit_toolbar_copy_cb)
-            self.edit_toolbar.paste.props.visible = False
-
-            edit_toolbar_button = ToolbarButton(
-                page=self.edit_toolbar,
-                icon_name='toolbar-edit')
-            self.edit_toolbar.show()
-            toolbar_box.toolbar.insert(edit_toolbar_button, -1)
-            edit_toolbar_button.show()
-
-            self.view_toolbar = ViewToolbar()
-            self.view_toolbar.connect('go-fullscreen', \
-                self.view_toolbar_go_fullscreen_cb)
-            self.view_toolbar.zoom_in.connect('clicked', self.zoom_in_cb)
-            self.view_toolbar.zoom_out.connect('clicked', self.zoom_out_cb)
-            self.view_toolbar.show()
-            view_toolbar_button = ToolbarButton(
-                page=self.view_toolbar,
-                icon_name='toolbar-view')
-            toolbar_box.toolbar.insert(view_toolbar_button, -1)
-            view_toolbar_button.show()
-
-            self._back_button = self._create_back_button()
-            toolbar_box.toolbar.insert(self._back_button, -1)
-            self._back_button.show()
-
-            self._forward_button = self._create_forward_button()
-            toolbar_box.toolbar.insert(self._forward_button, -1)
-            self._forward_button.show()
-
-            num_page_item = gtk.ToolItem()
-            self._num_page_entry = self._create_search()
-            num_page_item.add(self._num_page_entry)
-            self._num_page_entry.show()
-            toolbar_box.toolbar.insert(num_page_item, -1)
-            num_page_item.show()
-
-            total_page_item = gtk.ToolItem()
-            self._total_page_label = self._create_total_page_label()
-            total_page_item.add(self._total_page_label)
-            self._total_page_label.show()
-            toolbar_box.toolbar.insert(total_page_item, -1)
-            total_page_item.show()
-
-            spacer = gtk.SeparatorToolItem()
-            spacer.props.draw = False
-            toolbar_box.toolbar.insert(spacer, -1)
-            spacer.show()
-
-            stop_button = StopButton(self)
-            stop_button.props.accelerator = '<Ctrl><Shift>Q'
-            toolbar_box.toolbar.insert(stop_button, -1)
-            stop_button.show()
-
-            self.set_toolbar_box(toolbar_box)
-            toolbar_box.show()
-            
+            self.create_new_toolbar()
         else:
-            toolbox = activity.ActivityToolbox(self)
-            activity_toolbar = toolbox.get_activity_toolbar()
-            activity_toolbar.keep.props.visible = False
-
-            self.edit_toolbar = activity.EditToolbar()
-            self.edit_toolbar.undo.props.visible = False
-            self.edit_toolbar.redo.props.visible = False
-            self.edit_toolbar.separator.props.visible = False
-            self.edit_toolbar.copy.set_sensitive(False)
-            self.edit_toolbar.copy.connect('clicked', self.edit_toolbar_copy_cb)
-            self.edit_toolbar.paste.props.visible = False
-            toolbox.add_toolbar(_('Edit'), self.edit_toolbar)
-            self.edit_toolbar.show()
-        
-            self.read_toolbar = ReadToolbar()
-            toolbox.add_toolbar(_('Read'), self.read_toolbar)
-            self.read_toolbar.back.connect('clicked', self.go_back_cb)
-            self.read_toolbar.forward.connect('clicked', self.go_forward_cb)
-            self.read_toolbar.num_page_entry.connect('activate',  \
-                self.num_page_entry_activate_cb)
-            self.read_toolbar.show()
-
-            self.view_toolbar = ViewToolbar()
-            toolbox.add_toolbar(_('View'), self.view_toolbar)
-            self.view_toolbar.connect('go-fullscreen', \
-                self.view_toolbar_go_fullscreen_cb)
-            self.view_toolbar.zoom_in.connect('clicked', self.zoom_in_cb)
-            self.view_toolbar.zoom_out.connect('clicked', self.zoom_out_cb)
-            self.view_toolbar.show()
-
-            self.set_toolbox(toolbox)
-            toolbox.show()
+            self.create_old_toolbar()
             
         self.scrolled_window = gtk.ScrolledWindow()
         self.scrolled_window.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
@@ -247,7 +149,6 @@ class ReadEtextsActivity(activity.Activity):
         buffer = self.textview.get_buffer()
         self.markset_id = buffer.connect("mark-set", self.mark_set_cb)
 
-        self.toolbox.set_current_toolbar(TOOLBAR_READ)
         self.unused_download_tubes = set()
         self.want_document = True
         self.download_content_length = 0
@@ -268,58 +169,152 @@ class ReadEtextsActivity(activity.Activity):
                 # Wait for a successful join before trying to get the document
                 self.connect("joined", self.joined_cb)
 
-    def _create_back_button(self):
-        back = ToolButton('go-previous')
-        back.set_tooltip(_('Back'))
-        back.props.sensitive = False
-        back.connect('clicked', self.go_back_cb)
-        return back
+    def create_old_toolbar(self):
+        toolbox = activity.ActivityToolbox(self)
+        activity_toolbar = toolbox.get_activity_toolbar()
+        activity_toolbar.keep.props.visible = False
 
-    def _create_forward_button(self):
-        forward = ToolButton('go-next')
-        forward.set_tooltip(_('Forward'))
-        forward.props.sensitive = False
-        forward.connect('clicked', self.go_forward_cb)
-        return forward
+        self.edit_toolbar = activity.EditToolbar()
+        self.edit_toolbar.undo.props.visible = False
+        self.edit_toolbar.redo.props.visible = False
+        self.edit_toolbar.separator.props.visible = False
+        self.edit_toolbar.copy.set_sensitive(False)
+        self.edit_toolbar.copy.connect('clicked', self.edit_toolbar_copy_cb)
+        self.edit_toolbar.paste.props.visible = False
+        toolbox.add_toolbar(_('Edit'), self.edit_toolbar)
+        self.edit_toolbar.show()
 
-    def _create_search(self):
-        num_page_entry = gtk.Entry()
-        num_page_entry.set_text('0')
-        num_page_entry.set_alignment(1)
-        num_page_entry.connect('insert-text',
-                               self.__num_page_entry_insert_text_cb)
-        num_page_entry.connect('activate',
-                               self.__num_page_entry_activate_cb)
-        num_page_entry.set_width_chars(4)
-        return num_page_entry
+        self.read_toolbar = ReadToolbar()
+        toolbox.add_toolbar(_('Read'), self.read_toolbar)
+        self.read_toolbar.back.connect('clicked', self.go_back_cb)
+        self.read_toolbar.forward.connect('clicked', self.go_forward_cb)
+        self.read_toolbar.num_page_entry.connect('activate',  \
+            self.num_page_entry_activate_cb)
+        self.read_toolbar.show()
 
-    def _create_total_page_label(self):
-        total_page_label = gtk.Label()
+        self.view_toolbar = ViewToolbar()
+        toolbox.add_toolbar(_('View'), self.view_toolbar)
+        self.view_toolbar.connect('go-fullscreen', \
+            self.view_toolbar_go_fullscreen_cb)
+        self.view_toolbar.zoom_in.connect('clicked', self.zoom_in_cb)
+        self.view_toolbar.zoom_out.connect('clicked', self.zoom_out_cb)
+        self.view_toolbar.show()
+
+        self.set_toolbox(toolbox)
+        toolbox.show()
+        self.toolbox.set_current_toolbar(TOOLBAR_READ)
+
+    def create_new_toolbar(self):
+        toolbar_box = ToolbarBox()
+
+        activity_button = ActivityToolbarButton(self)
+        toolbar_box.toolbar.insert(activity_button, 0)
+        activity_button.show()
+
+        self.edit_toolbar = activity.EditToolbar()
+        self.edit_toolbar.undo.props.visible = False
+        self.edit_toolbar.redo.props.visible = False
+        self.edit_toolbar.separator.props.visible = False
+        self.edit_toolbar.copy.set_sensitive(False)
+        self.edit_toolbar.copy.connect('clicked', self.edit_toolbar_copy_cb)
+        self.edit_toolbar.paste.props.visible = False
+
+        edit_toolbar_button = ToolbarButton(
+            page=self.edit_toolbar,
+            icon_name='toolbar-edit')
+        self.edit_toolbar.show()
+        toolbar_box.toolbar.insert(edit_toolbar_button, -1)
+        edit_toolbar_button.show()
+
+        self.view_toolbar = ViewToolbar()
+        self.view_toolbar.connect('go-fullscreen', \
+            self.view_toolbar_go_fullscreen_cb)
+        self.view_toolbar.zoom_in.connect('clicked', self.zoom_in_cb)
+        self.view_toolbar.zoom_out.connect('clicked', self.zoom_out_cb)
+        self.view_toolbar.show()
+        view_toolbar_button = ToolbarButton(
+            page=self.view_toolbar,
+            icon_name='toolbar-view')
+        toolbar_box.toolbar.insert(view_toolbar_button, -1)
+        view_toolbar_button.show()
+
+        self._back_button = ToolButton('go-previous')
+        self._back_button.set_tooltip(_('Back'))
+        self._back_button.props.sensitive = False
+        self._back_button.connect('clicked', self.go_back_cb)
+        toolbar_box.toolbar.insert(self._back_button, -1)
+        self._back_button.show()
+
+        self._forward_button = ToolButton('go-next')
+        self._forward_button.set_tooltip(_('Forward'))
+        self._forward_button.props.sensitive = False
+        self._forward_button.connect('clicked', self.go_forward_cb)
+        toolbar_box.toolbar.insert(self._forward_button, -1)
+        self._forward_button.show()
+
+        num_page_item = gtk.ToolItem()
+        self.num_page_entry = gtk.Entry()
+        self.num_page_entry.set_text('0')
+        self.num_page_entry.set_alignment(1)
+        self.num_page_entry.connect('insert-text',
+                               self.__new_num_page_entry_insert_text_cb)
+        self.num_page_entry.connect('activate',
+                               self.__new_num_page_entry_activate_cb)
+        self.num_page_entry.set_width_chars(4)
+        num_page_item.add(self._num_page_entry)
+        self._num_page_entry.show()
+        toolbar_box.toolbar.insert(num_page_item, -1)
+        num_page_item.show()
+
+        total_page_item = gtk.ToolItem()
+        self.total_page_label = gtk.Label()
 
         label_attributes = pango.AttrList()
         label_attributes.insert(pango.AttrSize(14000, 0, -1))
         label_attributes.insert(pango.AttrForeground(65535, 65535, 
                                                      65535, 0, -1))
-        total_page_label.set_attributes(label_attributes)
+        self.total_page_label.set_attributes(label_attributes)
 
-        total_page_label.set_text(' / 0')
-        return total_page_label
+        self.total_page_label.set_text(' / 0')
+        total_page_item.add(self._total_page_label)
+        self._total_page_label.show()
+        toolbar_box.toolbar.insert(total_page_item, -1)
+        total_page_item.show()
 
-    def __num_page_entry_insert_text_cb(self, entry, text, length, position):
+        spacer = gtk.SeparatorToolItem()
+        spacer.props.draw = False
+        toolbar_box.toolbar.insert(spacer, -1)
+        spacer.show()
+
+        stop_button = StopButton(self)
+        stop_button.props.accelerator = '<Ctrl><Shift>Q'
+        toolbar_box.toolbar.insert(stop_button, -1)
+        stop_button.show()
+
+        self.set_toolbar_box(toolbar_box)
+        toolbar_box.show()
+
+    def __new_num_page_entry_insert_text_cb(self, entry, text, length, position):
         if not re.match('[0-9]', text):
             entry.emit_stop_by_name('insert-text')
             return True
         return False
 
-    def __num_page_entry_activate_cb(self, entry):
-        current_page = self.current_page
-        self._back_button.props.sensitive = current_page > 0
-        self._forward_button.props.sensitive = \
-            current_page < self.total_pages - 1
-        
-        self._num_page_entry.props.text = str(current_page + 1)
-        self._total_page_label.props.label = \
-            ' / ' + str(self.total_pages)
+    def __new_num_page_entry_activate_cb(self, entry):
+        global page
+        if entry.props.text:
+            new_page = int(entry.props.text) - 1
+        else:
+            new_page = 0
+
+        if new_page >= self.total_pages:
+            new_page = self.total_pages - 1
+        elif new_page < 0:
+            new_page = 0
+
+        self.show_page(new_page)
+        entry.props.text = str(new_page + 1)
+        page = new_page
 
     def keypress_cb(self, widget, event):
         "Respond when the user presses one of the arrow keys"
