@@ -200,7 +200,7 @@ class ReadEtextsActivity():
         try:
             f.write(filebytes)
         finally:
-            f.close
+            f.close()
 
     def read_file(self, filename):
         "Read the Etext file"
@@ -251,16 +251,13 @@ class ReadEtextsActivity():
         self.textview.set_left_margin(50)
         self.textview.set_cursor_visible(False)
         self.textview.connect("key_press_event", self.keypress_cb)
-        buffer = self.textview.get_buffer()
         self.font_desc = pango.FontDescription("sans 12")
-        font_size = self.font_desc.get_size()
         self.textview.modify_font(self.font_desc)
         self.show_page(0)
         self.scrolled_window.add(self.textview)
         self.window.add(self.scrolled_window)
         self.textview.show()
         self.scrolled_window.show()
-        v_adjustment = self.scrolled_window.get_vadjustment()
         self.window.show()
         gtk.main()
       

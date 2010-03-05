@@ -337,7 +337,7 @@ class ReadEtextsActivity(activity.Activity):
         try:
             f.write(filebytes)
         finally:
-            f.close
+            f.close()
 
     def get_saved_page_number(self):
         global page
@@ -421,17 +421,16 @@ class ReadEtextsActivity(activity.Activity):
 
     def write_file(self, filename):
         "Save meta data for the file."
-        if self.is_received_document == True:
+        if self.is_received_document:
             # This document was given to us by someone, so we have
             # to save it to the Journal.
             self.etext_file.seek(0)
             filebytes = self.etext_file.read()
-            print 'saving shared document'
             f = open(filename, 'wb')
             try:
                 f.write(filebytes)
             finally:
-                f.close
+                f.close()
         elif self.tempfile:
             if self.close_requested:
                 os.link(self.tempfile,  filename)

@@ -16,12 +16,9 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
 
-import sys
 import os
 import zipfile
-import pygtk
 import gtk
 import pango
 from sugar.activity import activity
@@ -253,7 +250,7 @@ class ReadEtextsActivity(activity.Activity):
         try:
             f.write(filebytes)
         finally:
-            f.close
+            f.close()
 
     def get_saved_page_number(self):
         global page
