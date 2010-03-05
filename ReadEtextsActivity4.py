@@ -1,4 +1,3 @@
-#
 # ReadEtextsActivity4.py  A version of ReadEtextsActivity that supports 
 # sharing ebooks over a Stream Tube in Telepathy and has both new and
 # old style toolbars.
@@ -17,8 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
+# 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  US
 
 import os
 import re
@@ -38,9 +36,9 @@ _NEW_TOOLBAR_SUPPORT = True
 try:
     from sugar.graphics.toolbarbox import ToolbarBox
     from sugar.graphics.toolbarbox import ToolbarButton
-    from sugar.activity.widgets import ActivityToolbarButton
     from sugar.activity.widgets import StopButton
     from toolbar import ViewToolbar
+    from mybutton import MyActivityToolbarButton
 except:
     _NEW_TOOLBAR_SUPPORT = False
     from toolbar import ReadToolbar,  ViewToolbar
@@ -207,7 +205,7 @@ class ReadEtextsActivity(activity.Activity):
     def create_new_toolbar(self):
         toolbar_box = ToolbarBox()
 
-        activity_button = ActivityToolbarButton(self)
+        activity_button = MyActivityToolbarButton(self)
         toolbar_box.toolbar.insert(activity_button, 0)
         activity_button.show()
 
@@ -238,19 +236,19 @@ class ReadEtextsActivity(activity.Activity):
         toolbar_box.toolbar.insert(view_toolbar_button, -1)
         view_toolbar_button.show()
 
-        self._back_button = ToolButton('go-previous')
-        self._back_button.set_tooltip(_('Back'))
-        self._back_button.props.sensitive = False
-        self._back_button.connect('clicked', self.go_back_cb)
-        toolbar_box.toolbar.insert(self._back_button, -1)
-        self._back_button.show()
+        self.back = ToolButton('go-previous')
+        self.back.set_tooltip(_('Back'))
+        self.back.props.sensitive = False
+        self.back.connect('clicked', self.go_back_cb)
+        toolbar_box.toolbar.insert(self.back, -1)
+        self.back.show()
 
-        self._forward_button = ToolButton('go-next')
-        self._forward_button.set_tooltip(_('Forward'))
-        self._forward_button.props.sensitive = False
-        self._forward_button.connect('clicked', self.go_forward_cb)
-        toolbar_box.toolbar.insert(self._forward_button, -1)
-        self._forward_button.show()
+        self.forward = ToolButton('go-next')
+        self.forward.set_tooltip(_('Forward'))
+        self.forward.props.sensitive = False
+        self.forward.connect('clicked', self.go_forward_cb)
+        toolbar_box.toolbar.insert(self.forward, -1)
+        self.forward.show()
 
         num_page_item = gtk.ToolItem()
         self.num_page_entry = gtk.Entry()
@@ -261,8 +259,8 @@ class ReadEtextsActivity(activity.Activity):
         self.num_page_entry.connect('activate',
                                self.__new_num_page_entry_activate_cb)
         self.num_page_entry.set_width_chars(4)
-        num_page_item.add(self._num_page_entry)
-        self._num_page_entry.show()
+        num_page_item.add(self.num_page_entry)
+        self.num_page_entry.show()
         toolbar_box.toolbar.insert(num_page_item, -1)
         num_page_item.show()
 
@@ -276,15 +274,16 @@ class ReadEtextsActivity(activity.Activity):
         self.total_page_label.set_attributes(label_attributes)
 
         self.total_page_label.set_text(' / 0')
-        total_page_item.add(self._total_page_label)
-        self._total_page_label.show()
+        total_page_item.add(self.total_page_label)
+        self.total_page_label.show()
         toolbar_box.toolbar.insert(total_page_item, -1)
         total_page_item.show()
 
-        spacer = gtk.SeparatorToolItem()
-        spacer.props.draw = False
-        toolbar_box.toolbar.insert(spacer, -1)
-        spacer.show()
+        separator = gtk.SeparatorToolItem()
+        separator.props.draw = False
+        separator.set_expand(True)
+        toolbar_box.toolbar.insert(separator, -1)
+        separator.show()
 
         stop_button = StopButton(self)
         stop_button.props.accelerator = '<Ctrl><Shift>Q'
@@ -312,9 +311,29 @@ class ReadEtextsActivity(activity.Activity):
         elif new_page < 0:
             new_page = 0
 
+        self.current_page = new_page
+        self.set_current_page(new_page)
         self.show_page(new_page)
         entry.props.text = str(new_page + 1)
+        self.update_nav_buttons()
         page = new_page
+
+    def update_nav_buttons(self):
+        current_page = self.current_page
+        self.back.props.sensitive = current_page > 0
+        self.forward.props.sensitive = \
+            current_page < self.total_pages - 1
+        
+        self.num_page_entry.props.text = str(current_page + 1)
+        self.total_page_label.props.label = \
+            ' / ' + str(self.total_pages)
+
+    def set_total_pages(self, pages):
+        self.total_pages = pages
+        
+    def set_current_page(self, page):
+        self.current_page = page
+        self.update_nav_buttons()
 
     def keypress_cb(self, widget, event):
         "Respond when the user presses one of the arrow keys"
@@ -371,7 +390,10 @@ class ReadEtextsActivity(activity.Activity):
         global page
         page=page-1
         if page < 0: page=0
-        self.read_toolbar.set_current_page(page)
+        if _NEW_TOOLBAR_SUPPORT:
+            self.set_current_page(page)
+        else:
+            self.read_toolbar.set_current_page(page)
         self.show_page(page)
         v_adjustment = self.scrolled_window.get_vadjustment()
         v_adjustment.value = v_adjustment.upper - v_adjustment.page_size
@@ -380,7 +402,10 @@ class ReadEtextsActivity(activity.Activity):
         global page
         page=page+1
         if page >= len(self.page_index): page=0
-        self.read_toolbar.set_current_page(page)
+        if _NEW_TOOLBAR_SUPPORT:
+            self.set_current_page(page)
+        else:
+            self.read_toolbar.set_current_page(page)
         self.show_page(page)
         v_adjustment = self.scrolled_window.get_vadjustment()
         v_adjustment.value = v_adjustment.lower
@@ -543,7 +568,8 @@ class ReadEtextsActivity(activity.Activity):
         self.get_saved_page_number()
         self.show_page(page)
         if _NEW_TOOLBAR_SUPPORT:
-            self.total_pages = pagecount + 1
+            self.set_total_pages(pagecount + 1)
+            self.set_current_page(page)
         else:
             self.read_toolbar.set_total_pages(pagecount + 1)
             self.read_toolbar.set_current_page(page)
