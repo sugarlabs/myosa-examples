@@ -1,0 +1,9 @@
+[Activity]
+name = Mini Chat
+service_name = net.flossmanuals.MiniChat
+icon = chat
+exec = sugar-activity minichat.MiniChat
+show_launcher = yes
+activity_version = 1
+license = GPLv2+
+

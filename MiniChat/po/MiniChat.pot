@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-06 18:31-0600\n"
+"POT-Creation-Date: 2010-03-05 10:33-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,37 +17,33 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: activity/activity.info:2
-msgid "Read ETexts II"
+msgid "Mini Chat"
 msgstr ""
 
-#: toolbar.py:34
-msgid "Back"
+#: minichat.py:70
+msgid "Off-line"
 msgstr ""
 
-#: toolbar.py:40
-msgid "Forward"
+#: minichat.py:70
+msgid "Share, or invite someone."
 msgstr ""
 
-#: toolbar.py:115
-msgid "Zoom out"
+#: minichat.py:91
+msgid "On-line"
 msgstr ""
 
-#: toolbar.py:120
-msgid "Zoom in"
+#: minichat.py:91
+msgid "Connected"
 msgstr ""
 
-#: toolbar.py:130
-msgid "Fullscreen"
+#: minichat.py:125
+msgid "joined the chat"
 msgstr ""
 
-#: ReadEtextsActivity2.py:34
-msgid "Edit"
+#: minichat.py:136
+msgid "left the chat"
 msgstr ""
 
-#: ReadEtextsActivity2.py:38
-msgid "Read"
-msgstr ""
-
-#: ReadEtextsActivity2.py:46
-msgid "View"
+#: minichat.py:147
+msgid "is here"
 msgstr ""

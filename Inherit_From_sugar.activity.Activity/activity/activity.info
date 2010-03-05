@@ -1,0 +1,9 @@
+[Activity]
+name = ReadEtexts I
+service_name = net.flossmanuals.ReadETextsActivity
+icon = read-etexts
+exec = sugar-activity ReadEtextsActivity.ReadEtextsActivity
+show_launcher = no
+mime_types = text/plain;application/zip
+activity_version = 1
+license = GPLv2+
