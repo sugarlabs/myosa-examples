@@ -1,6 +1,6 @@
 [Activity]
 name = ReadEtexts II
-service_name = net.flossmanuals.ReadETextsActivity2
+bundle_id = net.flossmanuals.ReadETextsActivity2
 icon = read-etexts
 exec = sugar-activity ReadEtextsActivity2.ReadEtextsActivity
 show_launcher = no
