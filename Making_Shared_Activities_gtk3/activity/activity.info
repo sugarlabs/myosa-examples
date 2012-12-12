@@ -1,0 +1,9 @@
+[Activity]
+name = ReadEtexts III
+bundle_id = net.flossmanuals.ReadETextsActivity3
+icon = read-etexts
+exec = sugar-activity ReadEtextsActivity3.ReadEtextsActivity
+show_launcher = no
+mime_types = text/plain;application/zip
+activity_version = 1
+license = GPLv2+
