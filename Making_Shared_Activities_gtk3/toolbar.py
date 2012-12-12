@@ -2,6 +2,7 @@
 #
 # Copyright (C) 2010, James Simmons.
 # Adapted from code Copyright (C) Red Hat Inc.
+# Copyright (C) 2012, Aneesh Dogra <lionaneesh@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
