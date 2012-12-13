@@ -49,7 +49,8 @@ class MiniChat(Activity):
         toolbox.show()
 
         self.scroller = Gtk.ScrolledWindow()
-        self.scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.scroller.set_policy(Gtk.PolicyType.NEVER,
+                                 Gtk.PolicyType.AUTOMATIC)
 
         root = self.make_root()
         self.set_canvas(root)
@@ -168,7 +169,8 @@ class MiniChat(Activity):
 
         self.conversation = Gtk.VBox()
         self.conversation.show_all()
-        vbox.pack_start(self.conversation, False, False, 0)
+        self.scroller.add_with_viewport(self.conversation)
+        vbox.pack_start(self.scroller, False, False, 0)
 
         self.entry = Gtk.Entry()
         self.entry.modify_bg(Gtk.StateType.INSENSITIVE,
