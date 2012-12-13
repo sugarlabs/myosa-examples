@@ -19,6 +19,7 @@
 from gi.repository import GObject
 from gettext import gettext as _
 from gi.repository import Gtk
+from gi.repository import Gdk
 from gi.repository import Pango
 import logging
 from sugar3.activity.activity import Activity, SCOPE_PRIVATE
@@ -57,6 +58,14 @@ class MiniChat(Activity):
 
         self.pservice = PresenceService()
         self.owner = self.pservice.get_owner()
+
+        screen = Gdk.Screen.get_default()
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_path('minichat.css')
+        context = Gtk.StyleContext()
+        context.add_provider_for_screen(screen,
+                                        css_provider,
+                                        Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
         # Track last message, to combine several messages:
         self._last_msg = None
@@ -159,7 +168,7 @@ class MiniChat(Activity):
 
         self.conversation = Gtk.VBox()
         self.conversation.show_all()
-        vbox.add(self.conversation)
+        vbox.pack_start(self.conversation, False, False, 0)
 
         self.entry = Gtk.Entry()
         self.entry.modify_bg(Gtk.StateType.INSENSITIVE,
@@ -170,7 +179,8 @@ class MiniChat(Activity):
 
         setattr(self.entry, "nick", "???")
         self.entry.connect('activate', self.entry_activate_cb)
-        vbox.add(self.entry)
+        vbox.pack_end(self.entry, False, False, 0)
+        vbox.show()
 
         box = Gtk.VBox(homogeneous=False)
         box.pack_end(vbox, False, True, 0)
@@ -255,8 +265,9 @@ class MiniChat(Activity):
             msg.show()
             msg.set_editable(False)
             msg.set_justification(Gtk.Justification.LEFT)
+            msg.set_border_width(5)
             msg.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-            msg_vbox.pack_start(msg, True, True, 2)
+            msg_vbox.pack_start(msg, True, True, 1)
 
         # Order of boxes for RTL languages:
         if lang_rtl:
