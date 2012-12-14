@@ -49,8 +49,7 @@ class MiniChat(Activity):
         toolbox.show()
 
         self.scroller = Gtk.ScrolledWindow()
-        self.scroller.set_policy(Gtk.PolicyType.NEVER,
-                                 Gtk.PolicyType.AUTOMATIC)
+        self.scroller.set_vexpand(True)
 
         root = self.make_root()
         self.set_canvas(root)
@@ -168,9 +167,11 @@ class MiniChat(Activity):
         vbox = Gtk.VBox()
 
         self.conversation = Gtk.VBox()
+        self.conversation.override_background_color(Gtk.StateType.NORMAL, \
+                                            Gdk.RGBA(*COLOR_WHITE.get_rgba()))
         self.conversation.show_all()
         self.scroller.add_with_viewport(self.conversation)
-        vbox.pack_start(self.scroller, False, False, 0)
+        vbox.pack_start(self.scroller, True, True, 0)
 
         self.entry = Gtk.Entry()
         self.entry.modify_bg(Gtk.StateType.INSENSITIVE,
@@ -217,6 +218,21 @@ class MiniChat(Activity):
         """
         if buddy:
             nick = buddy.props.nick
+            color = buddy.props.color
+            try:
+                color_stroke_html, color_fill_html = color.split(',')
+            except ValueError:
+                color_stroke_html, color_fill_html = ('#000000', '#888888')
+            # Select text color based on fill color:
+            color_fill_rgba = Color(color_fill_html).get_rgba()
+            color_fill_gray = (color_fill_rgba[0] + color_fill_rgba[1] +
+                               color_fill_rgba[2])/3
+            color_stroke = Gdk.RGBA(*Color(color_stroke_html).get_rgba())
+            color_fill = Gdk.RGBA(*Color(color_fill_html).get_rgba())
+            if color_fill_gray < 0.5:
+                text_color = Gdk.RGBA(*COLOR_WHITE.get_rgba())
+            else:
+                text_color = Gdk.RGBA(*COLOR_BLACK.get_rgba())
         else:
             nick = '???'  # XXX: should be '' but leave for debugging
 
@@ -243,13 +259,22 @@ class MiniChat(Activity):
             msg_vbox = rb.get_children()[1]
 
         else: # Its a new_msg, we need to create a new rb
+            # We are using an EventBox to get the border effect on rb
+            eb = Gtk.EventBox()
+            eb.override_background_color(Gtk.StateType.NORMAL, color_stroke)
+
             rb = Gtk.HBox()
+            rb.override_background_color(Gtk.StateType.NORMAL, color_fill)
+            eb.add(rb)
+
+            rb.set_border_width(10)
             logger.debug('rb: %s' % str(rb))
             self._last_msg = rb
             self._last_msg_sender = buddy
             if not status_message:
                 name = Gtk.Entry()
                 name.set_text(nick+':   ')
+                name.modify_font(FONT_BOLD.get_pango_desc())
                 name_vbox = Gtk.VBox()
                 name_vbox.add(name)
                 rb.pack_start(name_vbox, False, True, 0)
@@ -267,18 +292,15 @@ class MiniChat(Activity):
             msg.show()
             msg.set_editable(False)
             msg.set_justification(Gtk.Justification.LEFT)
+            msg.override_font(FONT_NORMAL.get_pango_desc())
+            msg.override_color(Gtk.StateType.NORMAL, text_color)
             msg.set_border_width(5)
             msg.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
             msg_vbox.pack_start(msg, True, True, 1)
 
-        # Order of boxes for RTL languages:
-        if lang_rtl:
-            msg_hbox.reverse()
-            if new_msg:
-                rb.reverse()
-
         if new_msg:
-            self.conversation.add(rb)
+            self.conversation.add(eb)
+        eb.show_all()
         rb.show_all()
 
     def entry_activate_cb(self, entry):
