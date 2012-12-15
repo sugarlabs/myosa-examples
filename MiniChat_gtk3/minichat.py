@@ -296,10 +296,10 @@ class MiniChat(Activity):
             msg.override_color(Gtk.StateType.NORMAL, text_color)
             msg.set_border_width(5)
             msg.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-            msg_vbox.pack_start(msg, True, True, 1)
+            msg_vbox.pack_start(msg, False, True, 1)
 
         if new_msg:
-            self.conversation.add(eb)
+            self.conversation.pack_start(eb, False, True, 0)
         eb.show_all()
         rb.show_all()
 
