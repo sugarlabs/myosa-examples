@@ -167,11 +167,8 @@ class MiniChat(Activity):
         vbox = Gtk.VBox()
 
         self.conversation = Gtk.VBox()
-        self.conversation.override_background_color(Gtk.StateType.NORMAL, \
-                                            Gdk.RGBA(*COLOR_WHITE.get_rgba()))
         self.conversation.show_all()
         self.scroller.add_with_viewport(self.conversation)
-        vbox.pack_start(self.scroller, True, True, 0)
 
         self.entry = Gtk.Entry()
         self.entry.modify_bg(Gtk.StateType.INSENSITIVE,
@@ -182,7 +179,10 @@ class MiniChat(Activity):
 
         setattr(self.entry, "nick", "???")
         self.entry.connect('activate', self.entry_activate_cb)
-        vbox.pack_end(self.entry, False, False, 0)
+
+        vbox.pack_start(self.entry, False, False, 0)
+        vbox.pack_end(self.scroller, True, True, 0)
+
         vbox.show()
 
         box = Gtk.VBox(homogeneous=False)
@@ -205,13 +205,9 @@ class MiniChat(Activity):
         .------------- rb ---------------.
         | +name_vbox+ +----msg_vbox----+ |
         | |         | |                | |
-        | | nick:   | | +----entry---+ | |
-        | |         | | | text       | | |
+        | | nick:   | | +------------+ | |
+        | |         | | |    Text    | | |
         | +---------+ | +------------+ | |
-        |             |                | |
-        |             | +----entry---+ | |
-        |             | | text       | | |
-        |             | +------------+ | |
         |             +----------------+ |
         `--------------------------------'
 
@@ -265,16 +261,21 @@ class MiniChat(Activity):
 
             rb = Gtk.HBox()
             rb.override_background_color(Gtk.StateType.NORMAL, color_fill)
+            rb.set_border_width(1)
             eb.add(rb)
 
-            rb.set_border_width(10)
             logger.debug('rb: %s' % str(rb))
             self._last_msg = rb
             self._last_msg_sender = buddy
             if not status_message:
-                name = Gtk.Entry()
-                name.set_text(nick+':   ')
-                name.modify_font(FONT_BOLD.get_pango_desc())
+                name = Gtk.TextView()
+                text_buffer = name.get_buffer()
+                text_buffer.set_text(nick + ':   ')
+                name.override_font(FONT_BOLD.get_pango_desc())
+                name.override_color(Gtk.StateType.NORMAL, text_color)
+                name.override_background_color(Gtk.StateType.NORMAL, color_fill)
+                name.set_border_width(5)
+                name.show()
                 name_vbox = Gtk.VBox()
                 name_vbox.add(name)
                 rb.pack_start(name_vbox, False, True, 0)
@@ -286,17 +287,24 @@ class MiniChat(Activity):
             self._last_msg_sender = None
 
         if text:
-            msg = Gtk.TextView()
-            text_buffer = msg.get_buffer()
-            text_buffer.set_text(text)
-            msg.show()
-            msg.set_editable(False)
-            msg.set_justification(Gtk.Justification.LEFT)
-            msg.override_font(FONT_NORMAL.get_pango_desc())
-            msg.override_color(Gtk.StateType.NORMAL, text_color)
-            msg.set_border_width(5)
-            msg.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-            msg_vbox.pack_start(msg, False, True, 1)
+            if not new_msg:
+                msg = msg_vbox.get_children()[0]
+                text_buffer = msg.get_buffer()
+                text_buffer.set_text(text_buffer.get_text(text_buffer.get_start_iter(),
+                                     text_buffer.get_end_iter(), True) + "\n" + text)
+            else:
+                msg = Gtk.TextView()
+                text_buffer = msg.get_buffer()
+                text_buffer.set_text(text)
+                msg.show()
+                msg.set_editable(False)
+                msg.set_border_width(5)
+                msg.set_justification(Gtk.Justification.LEFT)
+                msg.override_font(FONT_NORMAL.get_pango_desc())
+                msg.override_color(Gtk.StateType.NORMAL, text_color)
+                msg.override_background_color(Gtk.StateType.NORMAL, color_fill)
+                msg.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+                msg_vbox.pack_start(msg, True, True, 0)
 
         if new_msg:
             self.conversation.pack_start(eb, False, True, 0)
@@ -305,10 +313,10 @@ class MiniChat(Activity):
 
     def entry_activate_cb(self, entry):
         text = entry.get_text()
+        entry.set_text('')
         logger.debug('Entry: %s' % text)
         if text:
             self.add_text(self.owner, text)
-            entry.set_text('')
             if self.text_channel:
                 self.text_channel.send(text)
             else:
