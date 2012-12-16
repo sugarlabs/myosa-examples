@@ -169,7 +169,8 @@ class MiniChat(Activity):
         self.conversation = Gtk.VBox()
         self.conversation.show_all()
         self.scroller.add_with_viewport(self.conversation)
-
+        self.scroller.override_background_color(Gtk.StateType.NORMAL,
+                                                Gdk.RGBA(*COLOR_WHITE.get_rgba()))
         self.entry = Gtk.Entry()
         self.entry.modify_bg(Gtk.StateType.INSENSITIVE,
                              COLOR_WHITE.get_gdk_color())
@@ -224,7 +225,7 @@ class MiniChat(Activity):
             color_fill_gray = (color_fill_rgba[0] + color_fill_rgba[1] +
                                color_fill_rgba[2])/3
             color_stroke = Gdk.RGBA(*Color(color_stroke_html).get_rgba())
-            color_fill = Gdk.RGBA(*Color(color_fill_html).get_rgba())
+            color_fill = Gdk.RGBA(*color_fill_rgba)
             if color_fill_gray < 0.5:
                 text_color = Gdk.RGBA(*COLOR_WHITE.get_rgba())
             else:
