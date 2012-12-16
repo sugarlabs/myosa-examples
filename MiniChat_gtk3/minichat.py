@@ -59,14 +59,6 @@ class MiniChat(Activity):
         self.pservice = PresenceService()
         self.owner = self.pservice.get_owner()
 
-        screen = Gdk.Screen.get_default()
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_path('minichat.css')
-        context = Gtk.StyleContext()
-        context.add_provider_for_screen(screen,
-                                        css_provider,
-                                        Gtk.STYLE_PROVIDER_PRIORITY_USER)
-
         # Track last message, to combine several messages:
         self._last_msg = None
         self._last_msg_sender = None
