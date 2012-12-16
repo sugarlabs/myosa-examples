@@ -22,6 +22,7 @@ import pango
 import logging
 from sugar.activity.activity import Activity, ActivityToolbox, SCOPE_PRIVATE
 from sugar.graphics.alert import NotifyAlert
+from sugar.presence.presenceservice import PresenceService
 from sugar.graphics.style import (Color, COLOR_BLACK, COLOR_WHITE, 
     COLOR_BUTTON_GREY, FONT_BOLD, FONT_NORMAL)
 from sugar.graphics.roundbox import CanvasRoundBox
@@ -47,7 +48,8 @@ class MiniChat(Activity):
         self.set_toolbox(toolbox)
         toolbox.show()
 
-        self.owner = self._pservice.get_owner()
+        self.pservice = PresenceService()
+        self.owner = self.pservice.get_owner()
         # Auto vs manual scrolling:
         self._scroll_auto = True
         self._scroll_value = 0.0

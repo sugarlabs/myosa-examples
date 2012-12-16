@@ -1,6 +1,6 @@
 [Activity]
 name = Mini Chat
-service_name = net.flossmanuals.MiniChat
+bundle_id = net.flossmanuals.MiniChat
 icon = chat
 exec = sugar-activity minichat.MiniChat
 show_launcher = yes

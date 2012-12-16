@@ -1,9 +1,0 @@
-[Activity]
-name = MiniChat
-service_name = net.flossmanuals.MiniChat
-icon = chat
-exec = sugar-activity ReadEtextsActivity4.ReadEtextsActivity
-show_launcher = no
-mime_types = text/plain;application/zip
-activity_version = 1
-license = GPLv2+
