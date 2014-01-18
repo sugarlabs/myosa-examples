@@ -163,7 +163,7 @@ class ReadEtextsActivity(activity.Activity):
         self.textview.show()
         self.scrolled_window.show()
         page = 0
-        self.clipboard = Gtk.Clipboard()
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.textview.grab_focus()
         self.font_desc = Pango.FontDescription("sans %d" % style.zoom(10))
         self.textview.modify_font(self.font_desc)
@@ -306,16 +306,13 @@ class ReadEtextsActivity(activity.Activity):
     def mark_set_cb(self, textbuffer, iter, textmark):
  
         if textbuffer.get_has_selection():
-            begin, end = textbuffer.get_selection_bounds()
             self.edit_toolbar.copy.set_sensitive(True)
         else:
             self.edit_toolbar.copy.set_sensitive(False)
 
     def edit_toolbar_copy_cb(self, button):
         textbuffer = self.textview.get_buffer()
-        begin, end = textbuffer.get_selection_bounds()
-        copy_text = textbuffer.get_text(begin, end,  False)
-        self.clipboard.set_text(copy_text)
+        textbuffer.copy_clipboard(self.clipboard)
 
     def view_toolbar_go_fullscreen_cb(self, view_toolbar):
         self.fullscreen()
