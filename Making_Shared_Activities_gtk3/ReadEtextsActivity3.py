@@ -33,6 +33,7 @@ from gi.repository import GObject
 import telepathy
 from sugar3.activity import activity
 from sugar3.graphics import style
+from sugar3.graphics.toolbutton import ToolButton
 from sugar3.graphics.toolbarbox import ToolbarButton
 from sugar3.graphics.toolbarbox import ToolbarBox
 from sugar3.activity.widgets import ActivityToolbarButton
@@ -41,7 +42,7 @@ from sugar3.activity.widgets import EditToolbar
 from sugar3 import network
 from sugar3.datastore import datastore
 from sugar3.graphics.alert import NotifyAlert
-from toolbar import ReadToolbar, ViewToolbar
+from toolbar import ViewToolbar
 from gettext import gettext as _
 
 page=0
@@ -111,29 +112,19 @@ class ReadEtextsActivity(activity.Activity):
         toolbar_box.toolbar.insert(activity_button, 0)
         activity_button.show()
 
-        edit_toolbar = EditToolbar()
-        edit_toolbar.undo.props.visible = False
-        edit_toolbar.redo.props.visible = False
-        edit_toolbar.separator.props.visible = False
-        edit_toolbar.copy.set_sensitive(False)
-        edit_toolbar.copy.connect('clicked', self.edit_toolbar_copy_cb)
-        edit_toolbar.paste.props.visible = False
-        edit_toolbar_button = ToolbarButton(page=edit_toolbar,
-                                            label=_("Edit"))
-        edit_toolbar.show()
+        self.edit_toolbar = EditToolbar()
+        self.edit_toolbar.undo.props.visible = False
+        self.edit_toolbar.redo.props.visible = False
+        self.edit_toolbar.separator.props.visible = False
+        self.edit_toolbar.copy.set_sensitive(False)
+        self.edit_toolbar.copy.connect('clicked', self.edit_toolbar_copy_cb)
+        self.edit_toolbar.paste.props.visible = False
+        edit_toolbar_button = ToolbarButton(
+            page=self.edit_toolbar,
+            icon_name='toolbar-edit')
+        self.edit_toolbar.show()
         toolbar_box.toolbar.insert(edit_toolbar_button, -1)
         edit_toolbar_button.show()
-
-        read_toolbar = ReadToolbar()
-        read_toolbar.back.connect('clicked', self.go_back_cb)
-        read_toolbar.forward.connect('clicked', self.go_forward_cb)
-        read_toolbar.num_page_entry.connect('activate',
-                                     self.num_page_entry_activate_cb)
-        read_toolbar.show()
-        read_toolbar_button = ToolbarButton(page=read_toolbar,
-                                            label=_("Read"))
-        toolbar_box.toolbar.insert(read_toolbar_button, -1)
-        read_toolbar_button.show()
 
         view_toolbar = ViewToolbar()
         view_toolbar.connect('go-fullscreen',
@@ -141,10 +132,57 @@ class ReadEtextsActivity(activity.Activity):
         view_toolbar.zoom_in.connect('clicked', self.zoom_in_cb)
         view_toolbar.zoom_out.connect('clicked', self.zoom_out_cb)
         view_toolbar.show()
-        view_toolbar_button = ToolbarButton(page=view_toolbar,
-                                            label=_("View"))
+        view_toolbar_button = ToolbarButton(
+            page=view_toolbar,
+            icon_name='toolbar-view')
         toolbar_box.toolbar.insert(view_toolbar_button, -1)
         view_toolbar_button.show()
+
+        self.back = ToolButton('go-previous')
+        self.back.set_tooltip(_('Back'))
+        self.back.props.sensitive = False
+        self.back.connect('clicked', self.go_back_cb)
+        toolbar_box.toolbar.insert(self.back, -1)
+        self.back.show()
+
+        self.forward = ToolButton('go-next')
+        self.forward.set_tooltip(_('Forward'))
+        self.forward.props.sensitive = False
+        self.forward.connect('clicked', self.go_forward_cb)
+        toolbar_box.toolbar.insert(self.forward, -1)
+        self.forward.show()
+
+        num_page_item = Gtk.ToolItem()
+        self.num_page_entry = Gtk.Entry()
+        self.num_page_entry.set_text('0')
+        self.num_page_entry.set_alignment(1)
+        self.num_page_entry.connect('insert-text',
+                               self.__new_num_page_entry_insert_text_cb)
+        self.num_page_entry.connect('activate',
+                               self.__new_num_page_entry_activate_cb)
+        self.num_page_entry.set_width_chars(4)
+        num_page_item.add(self.num_page_entry)
+        self.num_page_entry.show()
+        toolbar_box.toolbar.insert(num_page_item, -1)
+        num_page_item.show()
+
+        total_page_item = Gtk.ToolItem()
+        self.total_page_label = Gtk.Label()
+
+        self.total_page_label.set_markup("<span foreground='#FFF'" \
+                                         " size='14000'></span>")
+
+        self.total_page_label.set_text(' / 0')
+        total_page_item.add(self.total_page_label)
+        self.total_page_label.show()
+        toolbar_box.toolbar.insert(total_page_item, -1)
+        total_page_item.show()
+
+        separator = Gtk.SeparatorToolItem()
+        separator.props.draw = False
+        separator.set_expand(True)
+        toolbar_box.toolbar.insert(separator, -1)
+        separator.show()
 
         stop_button = StopButton(self)
         stop_button.props.accelerator = '<Ctrl><Shift>Q'
@@ -202,6 +240,48 @@ class ReadEtextsActivity(activity.Activity):
             else:
                 # Wait for a successful join before trying to get the document
                 self.connect("joined", self.joined_cb)
+
+    def __new_num_page_entry_insert_text_cb(self, entry, text, length, position):
+        if not re.match('[0-9]', text):
+            entry.emit_stop_by_name('insert-text')
+            return True
+        return False
+
+    def __new_num_page_entry_activate_cb(self, entry):
+        global page
+        if entry.props.text:
+            new_page = int(entry.props.text) - 1
+        else:
+            new_page = 0
+
+        if new_page >= self.total_pages:
+            new_page = self.total_pages - 1
+        elif new_page < 0:
+            new_page = 0
+
+        self.current_page = new_page
+        self.set_current_page(new_page)
+        self.show_page(new_page)
+        entry.props.text = str(new_page + 1)
+        self.update_nav_buttons()
+        page = new_page
+
+    def update_nav_buttons(self):
+        current_page = self.current_page
+        self.back.props.sensitive = current_page > 0
+        self.forward.props.sensitive = \
+            current_page < self.total_pages - 1
+        
+        self.num_page_entry.props.text = str(current_page + 1)
+        self.total_page_label.props.label = \
+            ' / ' + str(self.total_pages)
+
+    def set_total_pages(self, pages):
+        self.total_pages = pages
+        
+    def set_current_page(self, page):
+        self.current_page = page
+        self.update_nav_buttons()
 
     def keypress_cb(self, widget, event):
         "Respond when the user presses one of the arrow keys"
