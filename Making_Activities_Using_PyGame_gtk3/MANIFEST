@@ -1,0 +1,17 @@
+
+setup.py
+
+
+activity/read-etexts.svg
+activity/activity.info
+demoiselle2.py
+glider_hit.png
+demoiselle.py
+demoiselle.png
+DemoiselleActivity.py
+sky.jpg
+glider_normal.png
+po/Demoiselle.pot
+sugargame/event.py
+sugargame/__init__.py
+sugargame/canvas.py

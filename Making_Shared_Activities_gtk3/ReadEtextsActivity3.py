@@ -19,10 +19,9 @@
 # 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-import sys
 import os
+import re
 import logging
-import tempfile
 import time
 import zipfile
 from gi.repository import Gtk
@@ -157,9 +156,9 @@ class ReadEtextsActivity(activity.Activity):
         self.num_page_entry.set_text('0')
         self.num_page_entry.set_alignment(1)
         self.num_page_entry.connect('insert-text',
-                               self.__new_num_page_entry_insert_text_cb)
+                               self.num_page_entry_insert_text_cb)
         self.num_page_entry.connect('activate',
-                               self.__new_num_page_entry_activate_cb)
+                               self.num_page_entry_activate_cb)
         self.num_page_entry.set_width_chars(4)
         num_page_item.add(self.num_page_entry)
         self.num_page_entry.show()
@@ -215,7 +214,7 @@ class ReadEtextsActivity(activity.Activity):
         vbox.show()
         
         page = 0
-        self.clipboard = Gtk.Clipboard()
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.textview.grab_focus()
         self.font_desc = Pango.FontDescription("sans %d" % style.zoom(10))
         self.textview.modify_font(self.font_desc)
@@ -241,13 +240,13 @@ class ReadEtextsActivity(activity.Activity):
                 # Wait for a successful join before trying to get the document
                 self.connect("joined", self.joined_cb)
 
-    def __new_num_page_entry_insert_text_cb(self, entry, text, length, position):
+    def num_page_entry_insert_text_cb(self, entry, text, length, position):
         if not re.match('[0-9]', text):
             entry.emit_stop_by_name('insert-text')
             return True
         return False
 
-    def __new_num_page_entry_activate_cb(self, entry):
+    def num_page_entry_activate_cb(self, entry):
         global page
         if entry.props.text:
             new_page = int(entry.props.text) - 1
@@ -309,25 +308,6 @@ class ReadEtextsActivity(activity.Activity):
             return True
         return False
 
-    def num_page_entry_activate_cb(self, entry):
-        global page
-        if entry.props.text:
-            new_page = int(entry.props.text) - 1
-        else:
-            new_page = 0
-
-        if new_page >= self.read_toolbar.total_pages:
-            new_page = self.read_toolbar.total_pages - 1
-        elif new_page < 0:
-            new_page = 0
-
-        self.read_toolbar.current_page = new_page
-        self.read_toolbar.set_current_page(new_page)
-        self.show_page(new_page)
-        entry.props.text = str(new_page + 1)
-        self.read_toolbar.update_nav_buttons()
-        page = new_page
-        
     def go_back_cb(self, button):
         self.page_previous()
     
@@ -338,7 +318,7 @@ class ReadEtextsActivity(activity.Activity):
         global page
         page=page-1
         if page < 0: page=0
-        self.read_toolbar.set_current_page(page)
+        self.set_current_page(page)
         self.show_page(page)
         v_adjustment = self.scrolled_window.get_vadjustment()
         v_adjustment.set_value(v_adjustment.get_upper() - \
@@ -348,7 +328,7 @@ class ReadEtextsActivity(activity.Activity):
         global page
         page=page+1
         if page >= len(self.page_index): page=0
-        self.read_toolbar.set_current_page(page)
+        self.set_current_page(page)
         self.show_page(page)
         v_adjustment = self.scrolled_window.get_vadjustment()
         v_adjustment.set_value(v_adjustment.get_lower())
@@ -383,9 +363,7 @@ class ReadEtextsActivity(activity.Activity):
 
     def edit_toolbar_copy_cb(self, button):
         textbuffer = self.textview.get_buffer()
-        begin, end = textbuffer.get_selection_bounds()
-        copy_text = textbuffer.get_text(begin, end)
-        self.clipboard.set_text(copy_text)
+        textbuffer.copy_clipboard(self.clipboard)
 
     def view_toolbar_go_fullscreen_cb(self, view_toolbar):
         self.fullscreen()
@@ -510,8 +488,8 @@ class ReadEtextsActivity(activity.Activity):
             os.remove(currentFileName)
         self.get_saved_page_number()
         self.show_page(page)
-        self.read_toolbar.set_total_pages(pagecount + 1)
-        self.read_toolbar.set_current_page(page)
+        self.set_total_pages(pagecount + 1)
+        self.set_current_page(page)
  
         # We've got the document, so if we're a shared activity, offer it
         if self.get_shared():
