@@ -1,5 +1,5 @@
 #
-# ReadEtextsActivity2.py  A version of ReadEtextsActivity with better 
+# ReadEtextsActivity2.py  A version of ReadEtextsActivity with better
 # toolbars and other refinements.
 # Copyright (C) 2010  James D. Simmons
 # Copyright (C) 2012  Aneesh Dogra <lionaneesh@gmail.com>
@@ -36,7 +36,7 @@ from sugar3.activity.widgets import _create_activity_icon
 from toolbar import ViewToolbar
 from gettext import gettext as _
 
-page=0
+page = 0
 PAGE_SIZE = 45
 TOOLBAR_READ = 2
 
@@ -82,7 +82,7 @@ class ReadEtextsActivity(activity.Activity):
         self.edit_toolbar.show()
         toolbar_box.toolbar.insert(edit_toolbar_button, -1)
         edit_toolbar_button.show()
-        
+
         view_toolbar = ViewToolbar()
         view_toolbar.connect('go-fullscreen',
                 self.view_toolbar_go_fullscreen_cb)
@@ -114,9 +114,9 @@ class ReadEtextsActivity(activity.Activity):
         self.num_page_entry.set_text('0')
         self.num_page_entry.set_alignment(1)
         self.num_page_entry.connect('insert-text',
-                               self.__new_num_page_entry_insert_text_cb)
+                               self.num_page_entry_insert_text_cb)
         self.num_page_entry.connect('activate',
-                               self.__new_num_page_entry_activate_cb)
+                               self.num_page_entry_activate_cb)
         self.num_page_entry.set_width_chars(4)
         num_page_item.add(self.num_page_entry)
         self.num_page_entry.show()
@@ -150,7 +150,8 @@ class ReadEtextsActivity(activity.Activity):
         toolbar_box.show()
 
         self.scrolled_window = Gtk.ScrolledWindow()
-        self.scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.scrolled_window.set_policy(Gtk.PolicyType.NEVER, 
+            Gtk.PolicyType.AUTOMATIC)
 
         self.textview = Gtk.TextView()
         self.textview.set_editable(False)
@@ -169,15 +170,16 @@ class ReadEtextsActivity(activity.Activity):
         self.textview.modify_font(self.font_desc)
 
         buffer = self.textview.get_buffer()
-        self.markset_id = buffer.connect("mark-set", self.mark_set_cb)
+        self.markset_id = buffer.connect("mark-set", 
+            self.mark_set_cb)
 
-    def __new_num_page_entry_insert_text_cb(self, entry, text, length, position):
+    def num_page_entry_insert_text_cb(self, entry, text, length, position):
         if not re.match('[0-9]', text):
             entry.emit_stop_by_name('insert-text')
             return True
         return False
 
-    def __new_num_page_entry_activate_cb(self, entry):
+    def num_page_entry_activate_cb(self, entry):
         global page
         if entry.props.text:
             new_page = int(entry.props.text) - 1
@@ -201,14 +203,14 @@ class ReadEtextsActivity(activity.Activity):
         self.back.props.sensitive = current_page > 0
         self.forward.props.sensitive = \
             current_page < self.total_pages - 1
-        
+
         self.num_page_entry.props.text = str(current_page + 1)
         self.total_page_label.props.label = \
             ' / ' + str(self.total_pages)
 
     def set_total_pages(self, pages):
         self.total_pages = pages
-        
+
     def set_current_page(self, page):
         self.current_page = page
         self.update_nav_buttons()
@@ -239,35 +241,16 @@ class ReadEtextsActivity(activity.Activity):
             return True
         return False
 
-    def num_page_entry_activate_cb(self, entry):
-        global page
-        if entry.props.text:
-            new_page = int(entry.props.text) - 1
-        else:
-            new_page = 0
-
-        if new_page >= self.total_pages:
-            new_page = self.total_pages - 1
-        elif new_page < 0:
-            new_page = 0
-
-        self.current_page = new_page
-        self.set_current_page(new_page)
-        self.show_page(new_page)
-        entry.props.text = str(new_page + 1)
-        self.update_nav_buttons()
-        page = new_page
-        
     def go_back_cb(self, button):
         self.page_previous()
-    
+
     def go_forward_cb(self, button):
         self.page_next()
 
     def page_previous(self):
         global page
-        page=page-1
-        if page < 0: page=0
+        page=page - 1
+        if page < 0: page = 0
         self.set_current_page(page)
         self.show_page(page)
         v_adjustment = self.scrolled_window.get_vadjustment()
@@ -276,8 +259,8 @@ class ReadEtextsActivity(activity.Activity):
 
     def page_next(self):
         global page
-        page=page+1
-        if page >= len(self.page_index): page=0
+        page = page + 1
+        if page >= len(self.page_index): page = 0
         self.set_current_page(page)
         self.show_page(page)
         v_adjustment = self.scrolled_window.get_vadjustment()
@@ -285,7 +268,7 @@ class ReadEtextsActivity(activity.Activity):
 
     def zoom_in_cb(self,  button):
         self.font_increase()
-        
+
     def zoom_out_cb(self,  button):
         self.font_decrease()
 
@@ -304,7 +287,7 @@ class ReadEtextsActivity(activity.Activity):
         self.textview.modify_font(self.font_desc)
 
     def mark_set_cb(self, textbuffer, iter, textmark):
- 
+
         if textbuffer.get_has_selection():
             self.edit_toolbar.copy.set_sensitive(True)
         else:
@@ -325,9 +308,12 @@ class ReadEtextsActivity(activity.Activity):
             return
         if v_adjustment.get_value() < v_adjustment.get_upper() - \
                 v_adjustment.get_page_size():
-            new_value = v_adjustment.get_value() + v_adjustment.step_increment
-            if new_value > v_adjustment.get_upper() - v_adjustment.get_page_size():
-                new_value = v_adjustment.get_upper() - v_adjustment.get_page_size()
+            new_value = v_adjustment.get_value() + \
+                v_adjustment.step_increment
+            if new_value > v_adjustment.get_upper() \
+                - v_adjustment.get_page_size():
+                new_value = v_adjustment.get_upper() \
+                    - v_adjustment.get_page_size()
             v_adjustment.set_value(new_value)
 
     def scroll_up(self):
@@ -385,7 +371,7 @@ class ReadEtextsActivity(activity.Activity):
             else:
                 # not a page number; maybe a volume number.
                 page = 0
-        
+
     def save_page_number(self):
         global page
         title = self.metadata.get('title', '')
@@ -404,7 +390,7 @@ class ReadEtextsActivity(activity.Activity):
     def read_file(self, filename):
         "Read the Etext file"
         global PAGE_SIZE,  page
-        
+
         if zipfile.is_zipfile(filename):
             self.zf = zipfile.ZipFile(filename, 'r')
             self.book_files = self.zf.namelist()
@@ -413,7 +399,7 @@ class ReadEtextsActivity(activity.Activity):
                     'tmp',  self.book_files[0])
         else:
             currentFileName = filename
-            
+
         self.etext_file = open(currentFileName,"r")
         self.page_index = [ 0 ]
         pagecount = 0
@@ -434,7 +420,7 @@ class ReadEtextsActivity(activity.Activity):
         self.show_page(page)
         self.set_total_pages(pagecount + 1)
         self.set_current_page(page)
- 
+
     def make_new_filename(self, filename):
         partition_tuple = filename.rpartition('/')
         return partition_tuple[2]
