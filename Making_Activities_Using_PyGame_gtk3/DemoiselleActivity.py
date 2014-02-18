@@ -1,6 +1,6 @@
 # DemoiselleActivity.py 
 
-# Copyright (C) 2010  James D. Simmons
+# Copyright (C) 2014  James D. Simmons
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,15 @@
 
 from gettext import gettext as _
 
-import gtk
+from gi.repository import Gtk
 import pygame
-from sugar.activity import activity
-from sugar.graphics.toolbutton import ToolButton
-import gobject
+from sugar3.activity import activity
+from sugar3.graphics.toolbutton import ToolButton
+from sugar3.graphics.toolbarbox import ToolbarButton
+from sugar3.graphics.toolbarbox import ToolbarBox
+from sugar3.activity.widgets import StopButton
+from sugar3.activity.widgets import ActivityToolbar
+from gi.repository import GObject
 import sugargame.canvas
 import demoiselle2
 
@@ -47,20 +51,32 @@ class DemoiselleActivity(activity.Activity):
         self._pygamecanvas.run_pygame(self.game.run)
         
     def build_toolbar(self):
-        toolbox = activity.ActivityToolbox(self)
-        activity_toolbar = toolbox.get_activity_toolbar()
-        activity_toolbar.keep.props.visible = False
-        activity_toolbar.share.props.visible = False
-        
-        self.view_toolbar = ViewToolbar()
-        toolbox.add_toolbar(_('View'), self.view_toolbar)
-        self.view_toolbar.connect('go-fullscreen',
+        toolbar_box = ToolbarBox()
+
+        view_toolbar = ViewToolbar()
+        view_toolbar.connect('go-fullscreen',
                 self.view_toolbar_go_fullscreen_cb)
-        self.view_toolbar.show()
+        view_toolbar.show()
+        view_toolbar_button = ToolbarButton(
+            page=view_toolbar,
+            icon_name='toolbar-view')
+        toolbar_box.toolbar.insert(view_toolbar_button, -1)
+        view_toolbar_button.show()
 
-        toolbox.show()
-        self.set_toolbox(toolbox)
+        separator = Gtk.SeparatorToolItem()
+        separator.props.draw = False
+        separator.set_expand(True)
+        toolbar_box.toolbar.insert(separator, -1)
+        separator.show()
 
+        stop_button = StopButton(self)
+        stop_button.props.accelerator = '<Ctrl><Shift>Q'
+        toolbar_box.toolbar.insert(stop_button, -1)
+        stop_button.show()
+
+        self.set_toolbar_box(toolbar_box)
+        toolbar_box.show()
+        
     def view_toolbar_go_fullscreen_cb(self, view_toolbar):
         self.fullscreen()
 
@@ -79,20 +95,20 @@ class DemoiselleActivity(activity.Activity):
         finally:
             f.close
 
-class ViewToolbar(gtk.Toolbar):
+class ViewToolbar(Gtk.Toolbar):
     __gtype_name__ = 'ViewToolbar'
 
     __gsignals__ = {
-        'needs-update-size': (gobject.SIGNAL_RUN_FIRST,
-                              gobject.TYPE_NONE,
+        'needs-update-size': (GObject.SIGNAL_RUN_FIRST,
+                              GObject.TYPE_NONE,
                               ([])),
-        'go-fullscreen': (gobject.SIGNAL_RUN_FIRST,
-                          gobject.TYPE_NONE,
+        'go-fullscreen': (GObject.SIGNAL_RUN_FIRST,
+                          GObject.TYPE_NONE,
                           ([]))
     }
 
     def __init__(self):
-        gtk.Toolbar.__init__(self)
+        Gtk.Toolbar.__init__(self)
         self.fullscreen = ToolButton('view-fullscreen')
         self.fullscreen.set_tooltip(_('Fullscreen'))
         self.fullscreen.connect('clicked', self.fullscreen_cb)

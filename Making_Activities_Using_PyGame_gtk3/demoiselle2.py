@@ -25,7 +25,7 @@
 #
 
 import pygame
-import gtk
+from gi.repository import Gtk
 import math
 import sys
 
@@ -66,8 +66,8 @@ class Demoiselle:
             self.clock.tick(30)
 
             # Pump GTK messages.
-            while gtk.events_pending():
-                gtk.main_iteration()
+            while Gtk.events_pending():
+                Gtk.main_iteration()
  
             # Pump PyGame messages.
             for event in pygame.event.get():

@@ -1,6 +1,6 @@
 [Activity]
 name = Demoiselle
-service_name = net.flossmanuals.Demoiselle
+bundle_id = net.flossmanuals.Demoiselle
 icon = read-etexts
 exec = sugar-activity DemoiselleActivity.DemoiselleActivity
 show_launcher = yes
