@@ -45,7 +45,8 @@ class DemoiselleActivity(activity.Activity):
         self._pygamecanvas = sugargame.canvas.PygameCanvas(self)
         # Note that set_canvas implicitly calls read_file when resuming from the Journal.
         self.set_canvas(self._pygamecanvas)
-        self.score = ''
+        self._pygamecanvas.grab_focus()
+        self.score = '0'
         
         # Start the game running.
         self._pygamecanvas.run_pygame(self.game.run)
