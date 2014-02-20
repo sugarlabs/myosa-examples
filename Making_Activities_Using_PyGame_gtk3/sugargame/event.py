@@ -26,6 +26,10 @@ class Translator(object):
         'KP_Down' : pygame.K_KP2,
         'KP_Left' : pygame.K_KP4,
         'KP_Right' : pygame.K_KP6,
+        'KP_Add' : pygame.K_KP_PLUS,
+        'equal' : pygame.K_EQUALS, 
+        'KP_NEXT' : pygame.K_KP_MINUS, 
+        'KP_Subtract' : pygame.K_MINUS, 
 
     }
 
