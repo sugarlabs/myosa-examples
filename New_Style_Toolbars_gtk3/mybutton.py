@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  US
-import gconf
 
 from sugar3.graphics.toolbarbox import ToolbarButton
 from sugar3.activity.widgets import ActivityToolbar
@@ -29,8 +28,7 @@ def _create_activity_icon(metadata):
     if metadata.get('icon-color', ''):
         color = XoColor(metadata['icon-color'])
     else:
-        client = gconf.client_get_default()
-        color = XoColor(client.get_string('/desktop/sugar/user/color'))
+        color = XoColor()
 
     from sugar3.activity.activity import get_bundle_path
     bundle = ActivityBundle(get_bundle_path())
