@@ -32,8 +32,8 @@ def _create_pipe():
         pipe.set_state(gst.STATE_NULL)
 
     def mark_cb(bus, message):
-        if message.structure.get_name() == 'espeak-mark':
-            mark = message.structure['mark']
+        if message.get_structure.get_name() == 'espeak-mark':
+            mark = message.get_structure['mark']
             highlight_cb(int(mark))
 
     bus = pipe.get_bus()

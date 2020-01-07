@@ -28,9 +28,9 @@ def gstmessage_cb(bus, message, pipe):
     if message.type in (gst.MESSAGE_EOS, gst.MESSAGE_ERROR):
         pipe.set_state(gst.STATE_NULL)
     elif message.type == gst.MESSAGE_ELEMENT and \
-            message.structure.get_name() == 'espeak-mark':
-        offset = message.structure['offset']
-        mark = message.structure['mark']
+            message.get_structure.get_name() == 'espeak-mark':
+        offset = message.get_structure['offset']
+        mark = message.get_structure['mark']
         print '%d:%s' % (offset, mark)
 
 pipe = gst.Pipeline('pipeline')

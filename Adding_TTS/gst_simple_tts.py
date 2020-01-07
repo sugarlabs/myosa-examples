@@ -72,11 +72,11 @@ src.props.text = buffer.props.text
 src.props.track = 1 # track for words
 
 def tts_cb(bus, message):
-    if message.structure.get_name() != 'espeak-word':
+    if message.get_structure.get_name() != 'espeak-word':
         return
 
-    offset = message.structure['offset']
-    len = message.structure['len']
+    offset = message.get_structure['offset']
+    len = message.get_structure['len']
 
     buffer.remove_tag(tag, buffer.get_start_iter(), buffer.get_end_iter())
     start = buffer.get_iter_at_offset(offset)

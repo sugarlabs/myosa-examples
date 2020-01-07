@@ -25,9 +25,9 @@ def gstmessage_cb(bus, message, pipe):
     if message.type in (gst.MESSAGE_EOS, gst.MESSAGE_ERROR):
         pipe.set_state(gst.STATE_NULL)
     elif message.type == gst.MESSAGE_ELEMENT and \
-            message.structure.get_name() == 'espeak-word':
-        offset = message.structure['offset']
-        len = message.structure['len']
+            message.get_structure.get_name() == 'espeak-word':
+        offset = message.get_structure['offset']
+        len = message.get_structure['len']
         print text[offset:offset+len]
 
 pipe = gst.Pipeline('pipeline')
